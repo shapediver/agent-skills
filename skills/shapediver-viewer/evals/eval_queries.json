@@ -1,0 +1,82 @@
+﻿[
+    {
+        "query": "create a webpage with a ShapeDiver 3D viewer and parameter controls",
+        "should_trigger": true
+    },
+    {
+        "query": "I need to set up a ShapeDiver session and display the model in a canvas",
+        "should_trigger": true
+    },
+    {
+        "query": "how do I change parameters and update the 3D model in ShapeDiver's Viewer?",
+        "should_trigger": true
+    },
+    {
+        "query": "build a React component that shows a ShapeDiver configurator with sliders",
+        "should_trigger": true
+    },
+    {
+        "query": "I want to download an export file from my ShapeDiver model in the browser",
+        "should_trigger": true
+    },
+    {
+        "query": "set up the ShapeDiver viewer with NPM in my Next.js project",
+        "should_trigger": true
+    },
+    {
+        "query": "how do I listen for events when the ShapeDiver model finishes loading?",
+        "should_trigger": true
+    },
+    {
+        "query": "I need to change the material color of an output node in ShapeDiver",
+        "should_trigger": true
+    },
+    {
+        "query": "add click-to-select interaction to my ShapeDiver viewer",
+        "should_trigger": true
+    },
+    {
+        "query": "how do I create drawing tools to let users draw lines on the model?",
+        "should_trigger": true
+    },
+    {
+        "query": "I want hover highlighting on my ShapeDiver model parts",
+        "should_trigger": true
+    },
+    {
+        "query": "add a gumball transform gizmo to move and rotate parts in ShapeDiver",
+        "should_trigger": true
+    },
+    {
+        "query": "how do I embed a ShapeDiver model using the App Builder iframe?",
+        "should_trigger": false
+    },
+    {
+        "query": "I need to process ShapeDiver exports on my server without any UI",
+        "should_trigger": false
+    },
+    {
+        "query": "create a Three.js scene from scratch without ShapeDiver",
+        "should_trigger": false
+    },
+    {
+        "query": "how do I use WebGL to render 3D objects?",
+        "should_trigger": false
+    },
+    {
+        "query": "build me an A-Frame VR scene with interactive objects",
+        "should_trigger": false
+    },
+    {
+        "query": "how do I deploy my Grasshopper model to ShapeDiver?",
+        "should_trigger": false
+    },
+    {
+        "query": "I need to customize the App Builder theme colors",
+        "should_trigger": false
+    },
+    {
+        "query": "add drag and drop file upload to my React app",
+        "should_trigger": false
+    }
+]

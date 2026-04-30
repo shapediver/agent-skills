@@ -1,0 +1,66 @@
+[
+    {
+        "query": "customize the ShapeDiver App Builder with my brand colors and logo",
+        "should_trigger": true
+    },
+    {
+        "query": "how do I change the theme of my ShapeDiver configurator?",
+        "should_trigger": true
+    },
+    {
+        "query": "I want to use the App Builder with a dark theme and custom fonts",
+        "should_trigger": true
+    },
+    {
+        "query": "change the background and panel layout in the ShapeDiver App Builder",
+        "should_trigger": true
+    },
+    {
+        "query": "hide certain parameter groups in the ShapeDiver App Builder UI",
+        "should_trigger": true
+    },
+    {
+        "query": "I want to use the ShapeDiver App Builder as-is, maybe with some branding",
+        "should_trigger": true
+    },
+    {
+        "query": "how do I apply a JSON theme to the ShapeDiver App Builder?",
+        "should_trigger": true
+    },
+    {
+        "query": "change the font in my ShapeDiver configurator to match our website",
+        "should_trigger": true
+    },
+    {
+        "query": "embed my ShapeDiver model on my website using an iframe",
+        "should_trigger": false
+    },
+    {
+        "query": "fork the ShapeDiver App Builder and add custom React panels",
+        "should_trigger": false
+    },
+    {
+        "query": "build a fully custom ShapeDiver viewer with the Viewer V3 API",
+        "should_trigger": false
+    },
+    {
+        "query": "add selection and drag interaction to my ShapeDiver viewer",
+        "should_trigger": false
+    },
+    {
+        "query": "generate STL exports from ShapeDiver on the server",
+        "should_trigger": false
+    },
+    {
+        "query": "how do I change the CSS theme of my WordPress site?",
+        "should_trigger": false
+    },
+    {
+        "query": "customize the Shopify theme for my online store",
+        "should_trigger": false
+    },
+    {
+        "query": "how do I upload my Grasshopper model to ShapeDiver?",
+        "should_trigger": false
+    }
+]

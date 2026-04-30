@@ -1,0 +1,66 @@
+[
+    {
+        "query": "embed my ShapeDiver model on my website using an iframe",
+        "should_trigger": true
+    },
+    {
+        "query": "give me the iframe code for my ShapeDiver App Builder configurator",
+        "should_trigger": true
+    },
+    {
+        "query": "I want to paste a ShapeDiver embed snippet into my Squarespace site",
+        "should_trigger": true
+    },
+    {
+        "query": "how do I set up embedding domains for ShapeDiver iframe?",
+        "should_trigger": true
+    },
+    {
+        "query": "my ShapeDiver iframe is blank, how do I fix it?",
+        "should_trigger": true
+    },
+    {
+        "query": "what's the quickest way to embed a ShapeDiver model with no code?",
+        "should_trigger": true
+    },
+    {
+        "query": "I need to put my ShapeDiver 3D configurator on a WordPress page",
+        "should_trigger": true
+    },
+    {
+        "query": "how do I allow iframe embedding for my ShapeDiver model?",
+        "should_trigger": true
+    },
+    {
+        "query": "I want to customize the App Builder colors, fonts, and logo",
+        "should_trigger": false
+    },
+    {
+        "query": "fork the ShapeDiver App Builder and add custom React components",
+        "should_trigger": false
+    },
+    {
+        "query": "build a custom ShapeDiver viewer with the Viewer V3 API",
+        "should_trigger": false
+    },
+    {
+        "query": "create a Node.js backend to generate exports from ShapeDiver",
+        "should_trigger": false
+    },
+    {
+        "query": "add click-to-select interaction to my ShapeDiver viewer",
+        "should_trigger": false
+    },
+    {
+        "query": "embed a YouTube video on my website using an iframe",
+        "should_trigger": false
+    },
+    {
+        "query": "how do I embed a Sketchfab 3D model?",
+        "should_trigger": false
+    },
+    {
+        "query": "I need to upload my Grasshopper model to ShapeDiver",
+        "should_trigger": false
+    }
+]

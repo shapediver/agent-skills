@@ -1,0 +1,66 @@
+﻿[
+    {
+        "query": "I have a Grasshopper model on ShapeDiver and want to make a web configurator",
+        "should_trigger": true
+    },
+    {
+        "query": "how do I embed a ShapeDiver model on my website?",
+        "should_trigger": true
+    },
+    {
+        "query": "I want to build a 3D product configurator using ShapeDiver",
+        "should_trigger": true
+    },
+    {
+        "query": "help me set up a parametric design tool using my Grasshopper model hosted on shapediver.com",
+        "should_trigger": true
+    },
+    {
+        "query": "what's the difference between ShapeDiver App Builder and the Viewer API?",
+        "should_trigger": true
+    },
+    {
+        "query": "I need to turn my Rhino/Grasshopper model into a web app for clients",
+        "should_trigger": true
+    },
+    {
+        "query": "can you help me create a React app that connects to ShapeDiver?",
+        "should_trigger": true
+    },
+    {
+        "query": "I want to set up server-side computations with ShapeDiver for automated exports",
+        "should_trigger": true
+    },
+    {
+        "query": "How do I create a Grasshopper definition from scratch?",
+        "should_trigger": false
+    },
+    {
+        "query": "Write me a Three.js scene with a rotating cube",
+        "should_trigger": false
+    },
+    {
+        "query": "can you build a product page with a photo gallery in React?",
+        "should_trigger": false
+    },
+    {
+        "query": "I need help deploying my Node.js app to Vercel",
+        "should_trigger": false
+    },
+    {
+        "query": "how do I use the Speckle viewer to display Revit models?",
+        "should_trigger": false
+    },
+    {
+        "query": "what's the best 3D model viewer library for the web?",
+        "should_trigger": false
+    },
+    {
+        "query": "help me set up a REST API with Express and MongoDB",
+        "should_trigger": false
+    },
+    {
+        "query": "I need to render parametric facades in Blender with Python scripting",
+        "should_trigger": false
+    }
+]

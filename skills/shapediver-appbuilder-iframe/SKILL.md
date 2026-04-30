@@ -1,0 +1,65 @@
+---
+name: shapediver-appbuilder-iframe
+description: >
+  Use this skill when the user wants to embed a ShapeDiver App Builder
+  configurator on their website using an iframe — the fastest path with zero
+  code. Covers the iframe HTML snippet, prerequisite domain setup, and iframe
+  settings. Activate when the user mentions embedding, iframe, putting a
+  ShapeDiver model on a webpage, or wants the simplest integration without
+  writing JavaScript.
+---
+
+# ShapeDiver App Builder — Iframe Embedding
+
+Follow every rule in this file exactly. Do not improvise or work around any constraint.
+
+Embedding via iframe is the fastest way to get a ShapeDiver configurator on your website —
+no ticket, no API code, no setup beyond domain whitelisting.
+
+---
+
+## Prerequisites
+
+1. **Set up embedding domains:** At least one domain must be listed in the "Global domains"
+   for the account. Go to the [Settings page](https://www.shapediver.com/app/settings) on
+   shapediver.com to manage embedding domains.
+   [Read more about embedding domains.](https://help.shapediver.com/doc/setup-domains-for-embedding)
+
+2. **Allow iframe embedding for the model:** In the model's "Edit" page, find the "Iframe"
+   section and check "Allow iframe embedding". Save changes.
+   [Read more about iframe settings.](https://help.shapediver.com/doc/iframe-settings)
+
+---
+
+## Iframe Embed
+
+```html
+<iframe
+  src="https://appbuilder.shapediver.com/v1/main/latest/?slug=YOUR_SLUG"
+  width="100%"
+  height="600"
+  frameborder="0"
+  referrerpolicy="origin"
+  allowfullscreen
+  style="overflow: hidden; border-width: 0;"
+></iframe>
+```
+
+Replace `YOUR_SLUG` with the model slug (e.g. `my-model-name`).
+
+**Finding your slug:** Go to your model on shapediver.com. The slug is the URL identifier
+shown in the model's URL.
+
+You can customize the width and height of the iframe as needed.
+
+---
+
+## Gotchas
+
+- **Domain setup is required BEFORE the iframe will work.** Without adding your domain to
+  the account's "Global domains" list, the iframe will load blank or show an error.
+- **Allow iframe embedding must be checked** on the model's Edit page. This is a separate
+  setting from domain whitelisting.
+- The `referrerpolicy="origin"` attribute is required — without it, the iframe may fail to
+  load on some browsers.
+- The slug is NOT the ticket or modelViewUrl. It's the URL identifier from shapediver.com.
