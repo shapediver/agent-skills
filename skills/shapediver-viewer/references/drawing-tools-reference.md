@@ -105,9 +105,7 @@ const drawingApi = createDrawingTools(
   viewport,
   {
     onUpdate: async (pointsData) => {
-      param.value = isTypedDrawing
-        ? JSON.stringify({ points: pointsData })
-        : JSON.stringify(pointsData);
+      param.value = JSON.stringify({ points: pointsData });
       await session.customize();
     },
     onCancel: () => console.log("Drawing cancelled"),
@@ -122,7 +120,51 @@ createDrawingToolbar(
 );
 ```
 
-CDN: `SDVDrawingTools.createDrawingTools(viewport, callbacks, settings)`.
+### CDN equivalent
+
+On CDN, all globals come from the single `bundle.js`. No extra scripts needed.
+Use `SDV.isDrawingParameterApi` for type guards and `SDVDrawingTools.createDrawingTools`
+for the factory.
+
+```js
+const param = session.getParameterByName("MY_DRAWING_PARAM");
+const isTypedDrawing = SDV.isDrawingParameterApi(param);
+const preConfigured = isTypedDrawing ? param.settings : {};
+
+const settings = {
+  /* see Rule 10 pattern above for full settings construction */
+};
+
+const drawingApi = SDVDrawingTools.createDrawingTools(
+  viewport,
+  {
+    onUpdate: async (pointsData) => {
+      param.value = JSON.stringify({ points: pointsData });
+      await session.customize();
+    },
+    onCancel: () => console.log("Drawing cancelled"),
+  },
+  settings,
+);
+
+createDrawingToolbar(
+  document.getElementById("canvas-container"),
+  drawingApi,
+  settings,
+);
+```
+
+### Drawing Parameter Value Format
+
+The `onUpdate` callback receives `pointsData` — an array of `[x, y, z]` coordinate arrays.
+Always set the value as:
+
+```ts
+param.value = JSON.stringify({ points: pointsData });
+```
+
+This is the format for both typed (`isDrawingParameterApi`) and untyped drawing parameters.
+Do NOT stringify `pointsData` directly without wrapping it in `{ points: ... }`.
 
 ---
 

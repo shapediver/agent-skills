@@ -102,6 +102,9 @@ See [code-patterns.md](references/code-patterns.md) § React Architectural Rules
 
 ## Setup
 
+**CDN vs. NPM decision:** Use CDN + plain HTML for single-page demos, prototypes, and
+embeds. Use NPM + framework (React, Vue, etc.) for production apps with build tooling.
+
 ### CDN (plain HTML)
 
 ```html
@@ -111,7 +114,9 @@ See [code-patterns.md](references/code-patterns.md) § React Architectural Rules
 ></script>
 ```
 
-Use a fixed version (`X.X.X`) in production. Exposes `SDV`, `SDVInteractions`,
+Use a fixed version (`X.X.X`) in production. **This single script includes ALL features** —
+viewer, interactions, drawing tools, transformation tools, and attribute visualization.
+Do NOT add extra `<script>` tags for individual features. Globals: `SDV`, `SDVInteractions`,
 `SDVDrawingTools`, `SDVTransformationTools`, `SDVAttributeVisualization`.
 
 ### CDN + React
@@ -164,6 +169,21 @@ session.automaticSceneUpdate = true;
 - **Sort params for UI:** `Object.values(session.parameters).filter(p => !p.hidden).sort((a,b) => (a.order??0) - (b.order??0))`
 - **Close:** `session.close(); viewport.close();` in cleanup
 
+### Parameter Properties
+
+- **`param.type`** — determines how to render a control and format the value:
+  `Bool`, `Int`, `Float`, `Even`, `Odd`, `String`, `StringList`, `Color`, `File`,
+  `Drawing`, `Interaction`
+- **`param.settings`** — pre-configured settings for `Drawing` and `Interaction` params.
+  Use type guards to determine the sub-type: `isSelectionParameterApi(param)`,
+  `isDraggingParameterApi(param)`, `isGumballTransformParameterApi(param)`,
+  `isRectangleTransformParameterApi(param)`, `isDrawingParameterApi(param)`.
+- **`param.group`** — model-author grouping from Grasshopper. Use this to organize UI
+  sections. Do NOT guess groups from parameter names.
+- **`param.visualization`** — hint for UI rendering (e.g., `CHECKLIST`, `SLIDER`)
+- **`param.order`** — sort order intended by the model author
+- **`param.hidden`** — if `true`, do not show in UI
+
 For detailed API surfaces (Session, Viewport, Parameter, Output, Export, Scene Tree, Events,
 Materials, Animations, Three.js), see [references/api-reference.md](references/api-reference.md).
 
@@ -177,10 +197,18 @@ React architecture, and troubleshooting, see [references/code-patterns.md](refer
 When the user wants interaction features, load the specific reference:
 
 - **Selection** (click to select/deselect): [references/interactions-selection.md](references/interactions-selection.md)
+  SelectManager + InteractionEngine setup, select/deselect events, multi-select
 - **Hovering** (visual feedback on hover): [references/interactions-hovering.md](references/interactions-hovering.md)
+  HoverManager setup, highlight on hover. References selection.md for InteractionEngine
 - **Dragging** (move objects by dragging): [references/interactions-dragging.md](references/interactions-dragging.md)
+  DragManager + constraints. References selection.md for InteractionEngine
 - **Gumball Transform** (3D translate/rotate/scale gizmo): [references/gumball-transform.md](references/gumball-transform.md)
+  GumballTransform setup, axis constraints, events
 - **Rectangle Transform** (2D planar gizmo): [references/rectangle-transform.md](references/rectangle-transform.md)
+  RectangleTransform setup, 2D bounds
 - **Drawing Tools** (draw/edit points and lines): [references/drawing-tools-reference.md](references/drawing-tools-reference.md)
+  Rules 10-12, settings tables, restrictions, full CDN + NPM examples, value format
 - **HTML Anchors** (overlay HTML on 3D scene): [references/html-anchors.md](references/html-anchors.md)
+  Text labels, image anchors, custom data anchors
 - **Attribute Visualization** (color-code geometry by data): [references/attribute-visualization.md](references/attribute-visualization.md)
+  Color-coded geometry overlays, layers, sdTF data inspection
