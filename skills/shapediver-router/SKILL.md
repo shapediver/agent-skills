@@ -51,6 +51,20 @@ Once a strategy is selected, you **must** collect the following before proceedin
 
 ### Checklist B: Viewer 3 API / Headless
 
+**Option 1 — Retrieve via API (preferred):** If the user provides a **model slug** and
+**Platform API access keys** (access key ID + secret), run the shared script to retrieve
+all model metadata automatically:
+
+```bash
+node ../../scripts/get-model-info.js <slug> <accessKeyId> <accessKeySecret>
+```
+
+This returns `ticket`, `modelViewUrl`, and all parameter/output/export details as JSON.
+Run with `--help` for full usage. Access keys are created at
+https://www.shapediver.com/app/settings/developers
+
+**Option 2 — Manual:** Collect these from the user directly:
+
 - [ ] **`ticket`**: The embedding ticket from the "Developers" tab on shapediver.com.
 - [ ] **`modelViewUrl`**: The Geometry Backend URL (also on the "Developers" tab).
 - [ ] **Parameter names or IDs**: Ask the user to list the parameter names (or IDs) they want to control. Do NOT provide code snippets or ask the user to run console commands — just ask them to share the names from their model.
