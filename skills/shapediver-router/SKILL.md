@@ -74,10 +74,10 @@ https://www.shapediver.com/app/settings/developers
 
 ## 🔄 Step 3: Skill Handoff
 
-After gathering the necessary information, **read the corresponding skill file(s)** before writing any code. State which file(s) you are loading:
+After gathering the necessary information, **read the corresponding skill file(s)** before writing any code. **Always tell the user which skill file(s) you are about to read** — this is a required part of the handoff:
 
-- **App Builder:** Read the `shapediver-appbuilder` skill. It will guide the user to the right sub-strategy (iframe, theme, or fork).
-- **Viewer 3 API:** Read the `shapediver-viewer` skill. It contains **critical rules (1–11)** at the top that must be followed — they prevent the most common LLM code generation errors. Interaction features (selection, drag, drawing tools, gumball) are included as references within the viewer skill.
-- **Headless:** Read the `shapediver-headless` skill.
+- **App Builder (iframe, theme, or fork):** Tell the user you will now read the `shapediver-appbuilder` skill (or the specific sub-skill: `shapediver-appbuilder-iframe`, `shapediver-appbuilder-theme`, or `shapediver-appbuilder-fork` if the sub-strategy is already clear). Then read it — it will guide the user to the right sub-strategy.
+- **Viewer 3 API:** Tell the user you will now read the `shapediver-viewer` skill, then read it. It contains **critical rules (1–11)** at the top that must be followed — they prevent the most common LLM code generation errors. Interaction features (selection, drag, drawing tools, gumball) are included as references within the viewer skill.
+- **Headless:** Tell the user you will now read the `shapediver-headless` skill, then read it.
 
-**Important:** Do NOT skip reading the skill. The rules in the `shapediver-viewer` skill exist because LLMs consistently generate broken code without them (wrong `onChange` usage, stale closures, hardcoded DrawingTools settings, etc.).
+**Important:** Do NOT skip reading the skill, and do NOT skip telling the user which skill you are reading. The rules in the `shapediver-viewer` skill exist because LLMs consistently generate broken code without them (wrong `onChange` usage, stale closures, hardcoded DrawingTools settings, etc.).

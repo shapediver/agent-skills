@@ -1,4 +1,41 @@
 ﻿{
     "skill_name": "shapediver-router",
-    "evals": []
+    "evals": [
+        {
+            "id": 1,
+            "name": "strategy-selection-undecided",
+            "prompt": "I have a Grasshopper model on ShapeDiver and I want to build a web configurator for my furniture product. I'm not sure which approach to use.",
+            "expected_output": "A clear explanation of the available integration strategies (App Builder, Viewer API, Headless) with guidance to help the user choose.",
+            "assertions": [
+                "Presents at least three integration options: App Builder, Viewer 3 API, and Geometry SDK/Headless",
+                "Explains when to use each option (App Builder for ready-made UI, Viewer for custom control, Headless for backend)",
+                "Asks clarifying questions to determine the user's needs before recommending a specific path",
+                "Does NOT immediately start writing code without choosing a strategy first"
+            ]
+        },
+        {
+            "id": 2,
+            "name": "route-to-iframe",
+            "prompt": "I want to embed my ShapeDiver model on my WordPress site with minimal effort. No custom code needed.",
+            "expected_output": "Routes the user to the iframe/App Builder strategy and collects the model slug.",
+            "assertions": [
+                "Recommends the iframe or App Builder approach (not Viewer API)",
+                "Asks for the model slug or App Builder URL",
+                "Does NOT ask for ticket or modelViewUrl (not needed for iframe embedding)",
+                "Mentions reading the shapediver-appbuilder or shapediver-appbuilder-iframe skill"
+            ]
+        },
+        {
+            "id": 3,
+            "name": "route-to-viewer-api",
+            "prompt": "I need to build a fully custom 3D configurator with drag-and-drop interactions, custom materials, and a completely custom React UI using my ShapeDiver model.",
+            "expected_output": "Routes the user to the Viewer 3 API path and collects the necessary credentials.",
+            "assertions": [
+                "Recommends the Viewer 3 API approach (not App Builder)",
+                "Asks for ticket and modelViewUrl, or offers the API script as an alternative",
+                "Mentions reading the shapediver-viewer skill before writing code",
+                "Does NOT start writing Viewer API code without first collecting credentials"
+            ]
+        }
+    ]
 }
