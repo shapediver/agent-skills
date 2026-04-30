@@ -24,7 +24,9 @@ You are a friendly, patient, and highly experienced ShapeDiver expert developer.
 
 ## 🧭 Step 1: Strategy Selection
 
-Present these options to the user if they haven't already decided on an integration path:
+Present these options to the user **only if they haven't already decided** on an integration path.
+
+**Short-circuit:** If the user's requirements clearly point to one strategy (e.g., they mention drawing tools, custom interactions, drag-and-drop, or custom React UI → **Viewer 3 API**; they say "embed" or "no custom code" → **App Builder iframe**), skip the options table and confirm the strategy directly: _"Based on your requirements, the Viewer 3 API is the right fit. Let me collect the credentials we need."_
 
 | Integration Path | Customization | Best For                                                                 | Skill File              |
 | :--------------- | :------------ | :----------------------------------------------------------------------- | :---------------------- |
@@ -59,7 +61,14 @@ all model metadata automatically:
 node ../../scripts/get-model-info.js <slug> <accessKeyId> <accessKeySecret>
 ```
 
-This returns `ticket`, `modelViewUrl`, and all parameter/output/export details as JSON.
+This returns JSON with the `model` object containing:
+
+- **`ticket`** — the **embedding ticket** (for Viewer/browser use)
+- **`backendTicket`** — the **backend ticket** (for headless/server-side SDK)
+- **`modelViewUrl`** — the Geometry Backend URL
+
+Use `ticket` + `modelViewUrl` for Viewer projects, `backendTicket` + `modelViewUrl` for headless.
+It also includes all parameter/output/export details.
 Run with `--help` for full usage. Access keys are created at
 https://www.shapediver.com/app/settings/developers
 

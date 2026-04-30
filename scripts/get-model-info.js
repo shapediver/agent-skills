@@ -117,7 +117,7 @@ async function main() {
     process.stderr.write(`Fetching model '${slug}'...\n`);
     let model;
     try {
-        const resp = await platformSdk.models.get(slug, ['backend_ticket', 'backend_system']);
+        const resp = await platformSdk.models.get(slug, ['ticket', 'backend_ticket', 'backend_system']);
         model = resp.data;
     } catch (e) {
         process.stderr.write(
@@ -139,12 +139,20 @@ async function main() {
         process.stderr.write('Backend access not enabled. Attempting to enable...\n');
         try {
             await platformSdk.models.patch(model.id, { backendaccess: true });
-            const m2 = await platformSdk.models.get(slug, ['backend_ticket', 'backend_system']);
+            // Wait briefly for the change to propagate
+            await new Promise(r => setTimeout(r, 2000));
+            const m2 = await platformSdk.models.get(slug, ['ticket', 'backend_ticket', 'backend_system']);
             model.backend_ticket = m2.data.backend_ticket;
+            model.ticket = m2.data.ticket;
         } catch (e) {
             process.stderr.write(
                 'Error: Backend access is not enabled and could not be enabled automatically.\n' +
-                'Enable it manually at https://www.shapediver.com/app/ in the model settings.\n'
+                'To fix this:\n' +
+                '  1. Go to https://www.shapediver.com/app/m/' + slug + '\n' +
+                '  2. Open the "Developers" tab\n' +
+                '  3. Enable "Backend access"\n' +
+                '  4. Copy the Ticket and Model View URL and provide them directly\n' +
+                '     (or re-run this script)\n'
             );
             process.exit(3);
         }
@@ -182,13 +190,21 @@ async function main() {
     }
 
     // ── Structured JSON to stdout ───────────────────────────────────────────
+    // ticket = embedding ticket (for Viewer in browser)
+    // backendTicket = backend ticket (for headless/server-side SDK)
+    const embeddingTicket = model.ticket?.ticket || null;
+    const backendTicket = model.backend_ticket.ticket;
+
     const result = {
         model: {
             title: model.title,
             slug: model.slug,
             guid: model.guid,
             id: model.id,
-            geometryBackendUrl,
+            ticket: embeddingTicket,
+            backendTicket: backendTicket,
+            modelViewUrl: geometryBackendUrl,
+            geometryBackendUrl, // alias kept for backwards compat
         },
         parameters: parameters.map(p => ({
             id: p.id,

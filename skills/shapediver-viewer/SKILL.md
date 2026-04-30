@@ -30,8 +30,14 @@ dependencies on first run, requires Node.js):
 node ../../scripts/get-model-info.js <slug> <accessKeyId> <accessKeySecret>
 ```
 
-The script outputs clean JSON to stdout (diagnostics to stderr) with `model`, `parameters`,
-`outputs`, and `exports`. Run with `--help` for full usage and exit codes.
+The script outputs clean JSON to stdout (diagnostics to stderr). The `model` object
+contains two tickets and the model view URL:
+
+- **`ticket`** — the **embedding ticket** for Viewer use in the browser. Use this in generated frontend code.
+- **`backendTicket`** — the **backend ticket** for headless/server-side SDK use.
+- **`modelViewUrl`** — the Geometry Backend URL.
+
+It also includes `parameters`, `outputs`, and `exports`. Run with `--help` for full usage and exit codes.
 
 It performs a three-step flow:
 
