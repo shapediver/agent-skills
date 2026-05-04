@@ -6,13 +6,21 @@ A 3D gizmo that lets users translate, rotate, and scale objects interactively.
 
 ## `param.settings` Reference
 
-When `isGumballTransformParameterApi(param)` is `true`, `param.settings` may contain:
+When `isGumballTransformParameterApi(param)` is `true`, `param.settings` at runtime has
+the structure `{ type: "gumballTransform", props: { ... } }`. The properties below are
+under `settings.props`. Always extract them first:
 
-| Property                        | Type           | Default      | Description                                              |
-| :------------------------------ | :------------- | :----------- | :------------------------------------------------------- |
-| `selectionColor`                | `string` (hex) | `"#ffff00"`  | Color of selected objects                                |
-| `availableColor`                | `string` (hex) | —            | Color highlighting available objects before interaction   |
-| `hoverColor`                    | `string` (hex) | `"#0000ff"`  | Color on hover                                           |
+```ts
+const settings = param.settings?.props ?? param.settings;
+```
+
+The extracted `settings` object may contain:
+
+| Property                        | Type                          | Default      | Description                                              |
+| :------------------------------ | :---------------------------- | :----------- | :------------------------------------------------------- |
+| `selectionColor`                | `string` or effect definition | `"#ffff00"`  | Color/effect of selected objects                         |
+| `availableColor`                | `string` or effect definition | —            | Color/effect highlighting available objects before interaction |
+| `hoverColor`                    | `string` or effect definition | `"#0000ff"`  | Color/effect on hover                                    |
 | `nameFilter`                    | `string[]`     | —            | Filters which scene nodes are selectable                 |
 | `hover`                         | `boolean`      | `true`       | Enable/disable hover effect                              |
 | `minimumSelection`              | `number`       | `0`          | Minimum objects to select                                |
@@ -54,13 +62,17 @@ CDN: `SDVTransformationTools.GumballTransform`.
 
 The gumball typically works with selection: the user selects nodes first, then the
 gumball gizmo is attached to the selected node(s). Set up a SelectManager using the
-gumball parameter's selection-related settings:
+gumball parameter's selection-related settings.
+
+**All managers and `addInteractionData` calls must use the same `componentId`.**
+Use the parameter ID. See [interactions-selection.md](interactions-selection.md) § Component ID.
 
 ```ts
 const gumballParam = Object.values(session.parameters).find(
   isGumballTransformParameterApi,
 );
-const settings = gumballParam?.settings;
+const settings = gumballParam?.settings?.props ?? gumballParam?.settings;
+const componentId = gumballParam.id;
 
 // Merge nameFilter from top-level AND from each objects[].nameFilter
 const mergedNameFilter = [
@@ -70,10 +82,32 @@ const mergedNameFilter = [
 
 // Set up selection for picking nodes (uses gumball's selection settings)
 const interactionEngine = new InteractionEngine(viewport);
-const selectManager = new SelectManager();
-selectManager.effectMaterial = new MaterialStandardData({
-  color: settings?.selectionColor ?? "#ffff00",
-});
+
+// App Builder default effects (or use settings values if provided)
+const selectionEffect = {
+  type: POST_PROCESSING_EFFECT_TYPE.OUTLINE,
+  properties: {
+    blendFunction: 27,
+    blur: true,
+    edgeStrength: 10,
+    hiddenEdgeColor: "#0d44f0",
+    kernelSize: 2,
+    visibleEdgeColor: "#0d44f0",
+  },
+};
+const hoverEffect = {
+  type: POST_PROCESSING_EFFECT_TYPE.OUTLINE,
+  properties: {
+    blendFunction: 27,
+    blur: true,
+    edgeStrength: 10,
+    hiddenEdgeColor: "#ffffff",
+    kernelSize: 2,
+    visibleEdgeColor: "#ffffff",
+  },
+};
+
+const selectManager = new SelectManager(componentId, selectionEffect);
 if (settings?.maximumSelection != null) {
   selectManager.maximumSelection = settings.maximumSelection;
 }
@@ -87,12 +121,14 @@ interactionEngine.addInteractionManager(selectManager);
 
 // Hover feedback — only skip if settings.hover is explicitly false
 if (settings?.hover !== false) {
-  const hoverManager = new HoverManager();
-  hoverManager.effectMaterial = new MaterialStandardData({
-    color: settings?.hoverColor ?? "#0000ff",
-  });
+  const hoverManager = new HoverManager(componentId, hoverEffect);
   interactionEngine.addInteractionManager(hoverManager);
 }
+
+// Mark nodes using addInteractionData with componentId
+// (use mergedNameFilter with convertUserDefinedNameFilters + gatherNodesForPattern
+//  or mark session.node if no filter)
+addInteractionData(session.node, { select: true, hover: true }, componentId);
 
 // `nodes` = array of scene tree nodes to attach the gizmo to.
 // Use `getNodesByName` to find nodes matching `nameFilter` patterns:
@@ -101,12 +137,14 @@ const nodesAndNames = getNodesByName([session], selectedNodeNames);
 const nodes = nodesAndNames.map((n) => n.node);
 
 // Pass settings (including restrictions) to the GumballTransform constructor.
+// The 4th argument is the componentId — required for proper scoping.
 // Per-object restrictions: match selected nodes against objects[].nameFilter
 // to determine which restriction IDs apply, then resolve them from settings.restrictions.
-const gumball = new GumballTransform(viewport, nodes, settings);
+const gumball = new GumballTransform(viewport, nodes, settings, componentId);
 ```
 
-CDN: `SDVInteractions.getNodesByName(...)`, `new SDVTransformationTools.GumballTransform(viewport, nodes)`.
+CDN: `SDVInteractions.getNodesByName(...)`,
+`new SDVTransformationTools.GumballTransform(viewport, nodes, settings, componentId)`.
 
 ## Listen for Transform Changes
 
@@ -125,6 +163,12 @@ addListener(EVENTTYPE_TRANSFORMATION_TOOLS.MATRIX_CHANGED, async (e) => {
 ## Gotchas
 
 - Always use `isGumballTransformParameterApi(param)` type guard before accessing `param.settings` (Rule 6).
+  Then extract props: `const settings = param.settings?.props ?? param.settings;`
+  **Reading `param.settings.nameFilter` directly returns `undefined`** at runtime because
+  settings are nested under `props`.
+- **Always pass `componentId`** to `SelectManager`, `HoverManager`, `addInteractionData`,
+  and `GumballTransform` (4th constructor arg). Without matching values, interaction
+  will not work.
 - The `nodes` array determines which objects get the gizmo. Use `getNodesByName` from
   `@shapediver/viewer.features.interaction` to find nodes matching the `nameFilter`
   patterns — see [name-filters.md](name-filters.md).
@@ -139,3 +183,5 @@ addListener(EVENTTYPE_TRANSFORMATION_TOOLS.MATRIX_CHANGED, async (e) => {
 - The gumball typically works with selection: the user selects a node first, then
   the gumball gizmo is attached to the selected node(s).
 - The `MATRIX_CHANGED` event fires on every gizmo interaction — call `session.customize()` to send the transformation to the backend.
+- **Never use `new InteractionData()` directly** — use `addInteractionData` for proper
+  `componentId` scoping.

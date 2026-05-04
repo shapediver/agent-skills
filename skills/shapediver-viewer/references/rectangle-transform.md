@@ -6,13 +6,21 @@ A 2D gizmo for planar manipulation of objects (translate and scale on a defined 
 
 ## `param.settings` Reference
 
-When `isRectangleTransformParameterApi(param)` is `true`, `param.settings` may contain:
+When `isRectangleTransformParameterApi(param)` is `true`, `param.settings` at runtime has
+the structure `{ type: "rectangleTransform", props: { ... } }`. The properties below are
+under `settings.props`. Always extract them first:
 
-| Property                        | Type           | Default      | Description                                              |
-| :------------------------------ | :------------- | :----------- | :------------------------------------------------------- |
-| `selectionColor`                | `string` (hex) | `"#ffff00"`  | Color of selected objects                                |
-| `availableColor`                | `string` (hex) | —            | Color highlighting available objects before interaction   |
-| `hoverColor`                    | `string` (hex) | `"#0000ff"`  | Color on hover                                           |
+```ts
+const settings = param.settings?.props ?? param.settings;
+```
+
+The extracted `settings` object may contain:
+
+| Property                        | Type                          | Default      | Description                                              |
+| :------------------------------ | :---------------------------- | :----------- | :------------------------------------------------------- |
+| `selectionColor`                | `string` or effect definition | `"#ffff00"`  | Color/effect of selected objects                         |
+| `availableColor`                | `string` or effect definition | —            | Color/effect highlighting available objects before interaction |
+| `hoverColor`                    | `string` or effect definition | `"#0000ff"`  | Color/effect on hover                                    |
 | `nameFilter`                    | `string[]`     | —            | Filters which scene nodes are selectable                 |
 | `hover`                         | `boolean`      | `true`       | Enable/disable hover effect                              |
 | `minimumSelection`              | `number`       | `0`          | Minimum objects to select                                |
@@ -49,13 +57,17 @@ CDN: `SDVTransformationTools.RectangleTransform`.
 ## Create RectangleTransform
 
 Like the gumball, the rectangle transform typically works with selection. Set up a
-SelectManager using the parameter's selection-related settings:
+SelectManager using the parameter's selection-related settings.
+
+**All managers and `addInteractionData` calls must use the same `componentId`.**
+Use the parameter ID. See [interactions-selection.md](interactions-selection.md) § Component ID.
 
 ```ts
 const rectParam = Object.values(session.parameters).find(
   isRectangleTransformParameterApi,
 );
-const settings = rectParam?.settings;
+const settings = rectParam?.settings?.props ?? rectParam?.settings;
+const componentId = rectParam.id;
 
 // Merge nameFilter from top-level AND from each objects[].nameFilter
 const mergedNameFilter = [
@@ -65,10 +77,32 @@ const mergedNameFilter = [
 
 // Set up selection for picking nodes
 const interactionEngine = new InteractionEngine(viewport);
-const selectManager = new SelectManager();
-selectManager.effectMaterial = new MaterialStandardData({
-  color: settings?.selectionColor ?? "#ffff00",
-});
+
+// App Builder default effects (or use settings values if provided)
+const selectionEffect = {
+  type: POST_PROCESSING_EFFECT_TYPE.OUTLINE,
+  properties: {
+    blendFunction: 27,
+    blur: true,
+    edgeStrength: 10,
+    hiddenEdgeColor: "#0d44f0",
+    kernelSize: 2,
+    visibleEdgeColor: "#0d44f0",
+  },
+};
+const hoverEffect = {
+  type: POST_PROCESSING_EFFECT_TYPE.OUTLINE,
+  properties: {
+    blendFunction: 27,
+    blur: true,
+    edgeStrength: 10,
+    hiddenEdgeColor: "#ffffff",
+    kernelSize: 2,
+    visibleEdgeColor: "#ffffff",
+  },
+};
+
+const selectManager = new SelectManager(componentId, selectionEffect);
 if (settings?.maximumSelection != null) {
   selectManager.maximumSelection = settings.maximumSelection;
 }
@@ -82,12 +116,12 @@ interactionEngine.addInteractionManager(selectManager);
 
 // Hover feedback — only skip if settings.hover is explicitly false
 if (settings?.hover !== false) {
-  const hoverManager = new HoverManager();
-  hoverManager.effectMaterial = new MaterialStandardData({
-    color: settings?.hoverColor ?? "#0000ff",
-  });
+  const hoverManager = new HoverManager(componentId, hoverEffect);
   interactionEngine.addInteractionManager(hoverManager);
 }
+
+// Mark nodes using addInteractionData with componentId
+addInteractionData(session.node, { select: true, hover: true }, componentId);
 
 // Use plane from settings if defined, otherwise use defaults
 const plane = settings?.plane ?? {
@@ -97,12 +131,13 @@ const plane = settings?.plane ?? {
 };
 
 // Pass settings (including plane and restrictions) to the RectangleTransform constructor.
+// The 4th argument is the componentId — required for proper scoping.
 // Per-object restrictions: match selected nodes against objects[].nameFilter
 // to determine which restriction IDs apply, then resolve them from settings.restrictions.
-const rectangleTransform = new RectangleTransform(viewport, nodes, settings);
+const rectangleTransform = new RectangleTransform(viewport, nodes, settings, componentId);
 ```
 
-CDN: `new SDVTransformationTools.RectangleTransform(viewport, nodes, opts)`.
+CDN: `new SDVTransformationTools.RectangleTransform(viewport, nodes, settings, componentId)`.
 
 ## Plane Parameters
 
@@ -115,6 +150,12 @@ CDN: `new SDVTransformationTools.RectangleTransform(viewport, nodes, opts)`.
 ## Gotchas
 
 - Always use `isRectangleTransformParameterApi(param)` type guard before accessing `param.settings` (Rule 6).
+  Then extract props: `const settings = param.settings?.props ?? param.settings;`
+  **Reading `param.settings.nameFilter` directly returns `undefined`** at runtime because
+  settings are nested under `props`.
+- **Always pass `componentId`** to `SelectManager`, `HoverManager`, `addInteractionData`,
+  and `RectangleTransform` (4th constructor arg). Without matching values, interaction
+  will not work.
 - The `plane` option is required — use `settings.plane` if defined, otherwise provide a default.
   It defines the 2D surface on which the transform operates.
 - `nodes` = array of scene tree nodes to attach the gizmo to. Use `getNodesByName` from
@@ -131,3 +172,5 @@ CDN: `new SDVTransformationTools.RectangleTransform(viewport, nodes, opts)`.
 - Apply all selection-related settings (`selectionColor`, `hoverColor`, `minimumSelection`,
   `maximumSelection`, `deselectOnEmpty`, `hover`) when setting up the SelectManager.
 - Use `GumballTransform` instead when the user needs full 3D translate/rotate/scale.
+- **Never use `new InteractionData()` directly** — use `addInteractionData` for proper
+  `componentId` scoping.

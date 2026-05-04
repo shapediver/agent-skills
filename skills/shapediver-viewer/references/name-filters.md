@@ -6,8 +6,9 @@ which scene tree nodes an interaction feature should apply to. It is part of
 (selection, dragging, gumball transform, rectangle transform).
 
 **When a model author configures an interaction parameter in Grasshopper, the `nameFilter`
-is included in `param.settings.nameFilter`.** Always read it from there — do NOT hardcode
-name filters.
+is included in the parameter's settings.** At runtime, `param.settings` has a nested
+structure: `{ type: "selection", props: { nameFilter, ... } }`. Always extract the
+props first — do NOT hardcode name filters.
 
 ---
 
@@ -84,10 +85,14 @@ custom traversal code.**
 ## Using `nameFilter` with Interaction Features
 
 The `nameFilter` controls which nodes are eligible for interaction. When present in
-`param.settings`, use it to target specific nodes instead of making the entire session
-node interactive.
+the parameter's settings (under `props`), use it to target specific nodes instead of
+making the entire session node interactive.
 
 ### Reading `nameFilter` from Parameter Settings
+
+**⚠️ At runtime, `param.settings` has a nested structure:** `{ type: "selection", props: { ... } }`.
+The actual properties (`nameFilter`, `maximumSelection`, etc.) are under `settings.props`.
+Reading `param.settings.nameFilter` directly returns `undefined`.
 
 ```ts
 import { isSelectionParameterApi } from "@shapediver/viewer";
@@ -96,20 +101,22 @@ const selectionParam = Object.values(session.parameters).find(
   isSelectionParameterApi,
 );
 if (selectionParam) {
-  const nameFilter = selectionParam.settings?.nameFilter;
+  // Extract the actual props from the nested settings structure
+  const settings = selectionParam.settings?.props ?? selectionParam.settings;
+  const nameFilter = settings?.nameFilter;
   // nameFilter is string[] | undefined
   // e.g., ["Chairs.Chair_1", "Chairs.Chair_2"]
 }
 ```
 
-The same pattern applies to all interaction parameter types:
+The same pattern applies to all interaction parameter types (always extract `props` first):
 
-- `isSelectionParameterApi(param)` → `param.settings.nameFilter`
-- `isDraggingParameterApi(param)` → `param.settings.nameFilter`
-- `isGumballTransformParameterApi(param)` → `param.settings.nameFilter`
-- `isRectangleTransformParameterApi(param)` → `param.settings.nameFilter`
+- `isSelectionParameterApi(param)` → `(param.settings?.props ?? param.settings).nameFilter`
+- `isDraggingParameterApi(param)` → `(param.settings?.props ?? param.settings).nameFilter`
+- `isGumballTransformParameterApi(param)` → `(param.settings?.props ?? param.settings).nameFilter`
+- `isRectangleTransformParameterApi(param)` → `(param.settings?.props ?? param.settings).nameFilter`
 
-For dragging and gumball/rectangle transform, each object in `param.settings.objects` also
+For dragging and gumball/rectangle transform, each object in the extracted `settings.objects` also
 has its own `nameFilter` (a single string per object, not an array).
 
 ### Converting Name Filters to Patterns
@@ -133,7 +140,7 @@ Object.entries(session.outputs).forEach(([outputId, output]) => {
 
 // Convert nameFilter strings into patterns grouped by output ID
 const patterns = convertUserDefinedNameFilters(
-  nameFilter, // string[] from param.settings.nameFilter
+  nameFilter, // string[] from extracted settings.nameFilter
   outputIdsToNamesMapping,
 );
 // patterns: { [outputId]: NodeNameFilterPattern[] }
@@ -174,9 +181,38 @@ for (const [outputId, outputPatterns] of Object.entries(patterns)) {
 
   // Add interaction data to each matched node
   Object.values(availableNodes).forEach(({ node }) => {
-    addInteractionData(node, { select: true }, componentId);
+    addInteractionData(node, { select: true, hover: true }, componentId);
   });
 }
+```
+
+**Important:** The `componentId` must match the `componentId` used when creating the
+`SelectManager` and `HoverManager` (see [interactions-selection.md](interactions-selection.md)).
+
+**Re-applying after `customize()`:** Output nodes are replaced on every `customize()`
+call. Use `output.updateCallback` to clean up old nodes and mark new ones:
+
+```ts
+output.updateCallback = (newNode, oldNode) => {
+  // Clean up InteractionData from old node (scoped to this componentId)
+  if (oldNode) {
+    oldNode.traverse((n) => {
+      for (const data of [...n.data]) {
+        if (
+          data instanceof InteractionData &&
+          data.restrictedManagers.includes(componentId)
+        ) {
+          n.removeData(data);
+          n.updateVersion();
+        }
+      }
+    });
+  }
+  // Mark new node with interaction data
+  if (newNode) {
+    // ... run gatherNodesForPattern + addInteractionData on newNode ...
+  }
+};
 ```
 
 CDN: `SDVInteractions.gatherNodesForPattern(...)`, `SDVInteractions.addInteractionData(...)`.
@@ -198,21 +234,25 @@ CDN: `SDVInteractions.getNodesByName(...)`.
 
 ### Without `nameFilter` (Fallback)
 
-When `nameFilter` is `undefined` or empty, apply `InteractionData` to the entire session
-node. This makes all geometry interactive:
+When `nameFilter` is `undefined` or empty, apply interaction data to the entire session
+node using `addInteractionData`. This makes all geometry interactive:
 
 ```ts
-import { InteractionData } from "@shapediver/viewer.features.interaction";
+import { addInteractionData } from "@shapediver/viewer.features.interaction";
 
-session.node.data.push(new InteractionData({ select: true }));
-session.node.updateVersion();
+addInteractionData(session.node, { select: true, hover: true }, componentId);
 ```
 
 ---
 
 ## Gotchas
 
-- **Always read `nameFilter` from `param.settings`** — it is configured by the Grasshopper
+- **Always extract settings props first:** `const settings = param.settings?.props ?? param.settings;`
+  At runtime, `param.settings` has structure `{ type: "selection", props: { ... } }`.
+  Reading `param.settings.nameFilter` directly returns `undefined`, which causes the
+  code to skip the name filter path and mark the entire `session.node` — **this makes
+  the entire model turn grey on hover** because effects apply to all geometry.
+- **Always read `nameFilter` from the extracted settings** — it is configured by the Grasshopper
   model author. Do not hardcode filter patterns.
 - The first segment of each pattern is the **output name**, not a node name. Use
   `convertUserDefinedNameFilters` to resolve output names to output IDs.
@@ -222,8 +262,12 @@ session.node.updateVersion();
   attribute in Grasshopper (a reserved attribute).
 - The same `nameFilter` mechanism is used across all interaction types — selection, dragging,
   gumball, rectangle transform, and restrictions.
-- For dragging/gumball/rectangle, `param.settings.objects` contains per-object name filters
+- For dragging/gumball/rectangle, the extracted `settings.objects` contains per-object name filters
   (each a single string). Combine them with the top-level `nameFilter` array when needed.
 - Use `addInteractionData` instead of manually pushing `new InteractionData()` — it handles
   component scoping (`restrictedManagers`) so multiple interaction parameters on the same
-  model don't interfere with each other.
+  model don't interfere with each other. The `componentId` passed here must match the
+  `componentId` used when creating `SelectManager` and `HoverManager`.
+- Use `node.removeData(data)` to remove `InteractionData` during cleanup. Filter by
+  `data.restrictedManagers.includes(componentId)` to remove only data from a specific
+  interaction parameter without affecting others.

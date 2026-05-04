@@ -130,6 +130,12 @@ user provides. Never create input fields for end users to enter these values.
 Use type guards (`isDrawingParameterApi`, `isSelectionParameterApi`, etc.) before accessing
 `param.settings`. Do not assume a type from the user's description.
 
+**⚠️ Interaction `param.settings` is nested at runtime:** The structure is
+`{ type: "selection", props: { nameFilter, maximumSelection, ... } }`. The actual
+properties are under `settings.props`, NOT directly on `settings`. Always extract:
+`const settings = param.settings?.props ?? param.settings;`
+Reading `param.settings.nameFilter` directly returns `undefined`.
+
 ### Rule 7: CDN — single `bundle.js`, correct globals
 
 - Use `https://viewer.shapediver.com/v3/latest/bundle.js` with `crossorigin="anonymous"` (REQUIRED)
@@ -233,6 +239,9 @@ session.automaticSceneUpdate = true;
   Use type guards to determine the sub-type: `isSelectionParameterApi(param)`,
   `isDraggingParameterApi(param)`, `isGumballTransformParameterApi(param)`,
   `isRectangleTransformParameterApi(param)`, `isDrawingParameterApi(param)`.
+  **⚠️ For interaction parameters, `settings` is nested at runtime:**
+  `{ type: "selection", props: { nameFilter, maximumSelection, ... } }`.
+  Always extract: `const settings = param.settings?.props ?? param.settings;`
 - **`param.group`** — model-author grouping from Grasshopper. Use this to organize UI
   sections. Do NOT guess groups from parameter names.
 - **`param.visualization`** — hint for UI rendering (e.g., `CHECKLIST`, `SLIDER`)

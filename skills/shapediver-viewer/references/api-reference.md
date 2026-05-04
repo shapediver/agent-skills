@@ -222,6 +222,18 @@ strongly-typed `settings`. Use type guards to narrow:
 
 Once a type guard passes, `param.settings` is **already defined and typed**. No cast needed.
 
+**⚠️ Runtime structure:** At runtime, `param.settings` for interaction parameters has a
+nested structure: `{ type: "selection", props: { nameFilter, maximumSelection, ... } }`.
+The actual properties are under `settings.props`, NOT directly on `settings`. Always
+extract props first:
+
+```ts
+const settings = param.settings?.props ?? param.settings;
+```
+
+Reading `param.settings.nameFilter` directly returns `undefined`. See the interaction
+reference files for details.
+
 **Typed parameter values:**
 
 | Parameter API                     | Value Type                         | Structure                                                     |
@@ -274,12 +286,12 @@ by `customize()` — must be explicitly requested.**
 
 **`ShapeDiverResponseExportResult`** — available as `result.result`:
 
-| Property    | Type     | Description              |
-| ----------- | -------- | ------------------------ |
-| `href?`     | `string` | URL                      |
-| `err?`      | `string` | Error message if failed  |
-| `msg?`      | `string` | Status message           |
-| `modelId?`  | `string` | Model identifier         |
+| Property   | Type     | Description             |
+| ---------- | -------- | ----------------------- |
+| `href?`    | `string` | URL                     |
+| `err?`     | `string` | Error message if failed |
+| `msg?`     | `string` | Status message          |
+| `modelId?` | `string` | Model identifier        |
 
 ### Code Examples
 
@@ -448,7 +460,7 @@ Materials are embedded in the geometry output. Find and replace by material name
 const replaceMaterial = (
   node: ITreeNode,
   materialName: string,
-  material: MaterialStandardData
+  material: MaterialStandardData,
 ) => {
   for (let i = 0; i < node.data.length; i++) {
     // Materials can be directly in the node's data
@@ -470,11 +482,15 @@ const replaceMaterial = (
 // Usage: find the output and replace the material
 const output = session.getOutputByName("Primary")[0];
 if (output.node) {
-  replaceMaterial(output.node, "PrimaryMaterial", new MaterialStandardData({
-    color: "#00ff00",
-    metalness: 0.5,
-    roughness: 0.3,
-  }));
+  replaceMaterial(
+    output.node,
+    "PrimaryMaterial",
+    new MaterialStandardData({
+      color: "#00ff00",
+      metalness: 0.5,
+      roughness: 0.3,
+    }),
+  );
   output.node.updateVersion();
 }
 ```
@@ -496,7 +512,7 @@ Override the material output directly:
 const overrideOutputMaterial = async (
   session: ISessionApi,
   outputName: string,
-  material: MaterialStandardData | MaterialStandardData[]
+  material: MaterialStandardData | MaterialStandardData[],
 ) => {
   const outputsByName = session.getOutputByName(outputName);
   // Find the geometry output (material property is undefined for geometry outputs)
@@ -510,11 +526,11 @@ const overrideOutputMaterial = async (
   // Node structure: outputNode → transformationNode → materialNode
   if (Array.isArray(material)) {
     geometryOutput.node!.children.forEach(
-      (c, index) => (c.children[0].data[0] = material[index])
+      (c, index) => (c.children[0].data[0] = material[index]),
     );
   } else {
     geometryOutput.node!.children.forEach(
-      (c) => (c.children[0].data[0] = material)
+      (c) => (c.children[0].data[0] = material),
     );
   }
 
@@ -555,19 +571,19 @@ SDV.addListener(SDV.EVENTTYPE_OUTPUT.OUTPUT_UPDATED, (e) => {
 
 #### MaterialStandardData Properties
 
-| Category | Properties |
-| :--- | :--- |
-| **Color** | `color`, `map` |
-| **Metalness / Roughness** | `metalness`, `metalnessMap`, `roughness`, `roughnessMap`, `metalnessRoughnessMap` |
-| **Normal / Bump** | `normalMap`, `normalScale`, `bumpMap`, `bumpScale` |
-| **Displacement** | `displacementMap`, `displacementScale`, `displacementBias` |
-| **Emissive** | `emissiveness`, `emissiveMap` |
-| **Ambient Occlusion** | `aoMap`, `aoMapIntensity` |
-| **Transparency (alpha)** | `opacity`, `alphaMap`, `alphaCutoff` |
+| Category                        | Properties                                                                                                       |
+| :------------------------------ | :--------------------------------------------------------------------------------------------------------------- |
+| **Color**                       | `color`, `map`                                                                                                   |
+| **Metalness / Roughness**       | `metalness`, `metalnessMap`, `roughness`, `roughnessMap`, `metalnessRoughnessMap`                                |
+| **Normal / Bump**               | `normalMap`, `normalScale`, `bumpMap`, `bumpScale`                                                               |
+| **Displacement**                | `displacementMap`, `displacementScale`, `displacementBias`                                                       |
+| **Emissive**                    | `emissiveness`, `emissiveMap`                                                                                    |
+| **Ambient Occlusion**           | `aoMap`, `aoMapIntensity`                                                                                        |
+| **Transparency (alpha)**        | `opacity`, `alphaMap`, `alphaCutoff`                                                                             |
 | **Transparency (transmission)** | `transmission`, `transmissionMap`, `ior`, `thickness`, `thicknessMap`, `attenuationColor`, `attenuationDistance` |
-| **Clearcoat** | `clearcoat`, `clearcoatMap`, `clearcoatNormalMap`, `clearcoatRoughness`, `clearcoatRoughnessMap` |
-| **Sheen** | `sheen`, `sheenColor`, `sheenColorMap`, `sheenRoughness`, `sheenRoughnessMap` |
-| **Specular** | `specularColor`, `specularColorMap`, `specularIntensity`, `specularIntensityMap` |
+| **Clearcoat**                   | `clearcoat`, `clearcoatMap`, `clearcoatNormalMap`, `clearcoatRoughness`, `clearcoatRoughnessMap`                 |
+| **Sheen**                       | `sheen`, `sheenColor`, `sheenColorMap`, `sheenRoughness`, `sheenRoughnessMap`                                    |
+| **Specular**                    | `specularColor`, `specularColorMap`, `specularIntensity`, `specularIntensityMap`                                 |
 
 Replace materials by traversing node data. Use `output.freeze = true` to persist across
 `customize()` calls.

@@ -279,7 +279,7 @@ import {
 import {
   InteractionEngine,
   SelectManager,
-  InteractionData,
+  addInteractionData,
   IDragEvent,
 } from "@shapediver/viewer.features.interaction";
 
@@ -301,14 +301,14 @@ const outlineDef: IOutlineEffectDefinition = {
 };
 const outlineToken = viewport.postProcessing.addEffect(outlineDef);
 
-// Set up selection
+// Set up selection with componentId scoping
+const componentId = "outline-selection"; // unique identifier for this interaction
 const engine = new InteractionEngine(viewport);
-const selectManager = new SelectManager();
+const selectManager = new SelectManager(componentId);
 engine.addInteractionManager(selectManager);
 
 for (const child of session.node.children) {
-  child.data.push(new InteractionData({ select: true }));
-  child.updateVersion();
+  addInteractionData(child, { select: true }, componentId);
 }
 
 // Highlight selected node with outline
