@@ -241,9 +241,12 @@ When the user wants interaction features, load the specific reference:
 - **Name Filters** (targeting specific nodes for interaction): [references/name-filters.md](references/name-filters.md)
   How `nameFilter` patterns work, dot-separated syntax, wildcards, scene tree traversal
 - **Selection** (click to select/deselect): [references/interactions-selection.md](references/interactions-selection.md)
-  SelectManager + InteractionEngine setup, select/deselect events, multi-select
-- **Hovering** (visual feedback on hover): [references/interactions-hovering.md](references/interactions-hovering.md)
-  HoverManager setup, highlight on hover. References selection.md for InteractionEngine
+  SelectManager + HoverManager + InteractionEngine setup, select/deselect events,
+  multi-select, cleanup/teardown, multiple selection parameters.
+  **Always includes hover** — do not set up hover separately when using selection.
+- **Hovering** (visual feedback on hover, standalone): [references/interactions-hovering.md](references/interactions-hovering.md)
+  HoverManager setup for hover-only use cases. When combined with selection,
+  hover is already included — see selection reference instead.
 - **Dragging** (move objects by dragging): [references/interactions-dragging.md](references/interactions-dragging.md)
   DragManager + constraints. References selection.md for InteractionEngine
 - **Gumball Transform** (3D translate/rotate/scale gizmo): [references/gumball-transform.md](references/gumball-transform.md)
