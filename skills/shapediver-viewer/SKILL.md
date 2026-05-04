@@ -238,6 +238,8 @@ React architecture, and troubleshooting, see [references/code-patterns.md](refer
 
 When the user wants interaction features, load the specific reference:
 
+- **Name Filters** (targeting specific nodes for interaction): [references/name-filters.md](references/name-filters.md)
+  How `nameFilter` patterns work, dot-separated syntax, wildcards, scene tree traversal
 - **Selection** (click to select/deselect): [references/interactions-selection.md](references/interactions-selection.md)
   SelectManager + InteractionEngine setup, select/deselect events, multi-select
 - **Hovering** (visual feedback on hover): [references/interactions-hovering.md](references/interactions-hovering.md)

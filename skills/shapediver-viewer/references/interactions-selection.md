@@ -40,6 +40,12 @@ CDN: `new SDVInteractions.SelectManager()`.
 
 ## Mark Nodes as Selectable
 
+When `nameFilter` is defined in `param.settings`, use it to target specific nodes.
+See [name-filters.md](name-filters.md) for the full workflow using `convertUserDefinedNameFilters`,
+`gatherNodesForPattern`, and `addInteractionData`.
+
+When `nameFilter` is **not defined** (or empty), make all geometry interactive:
+
 ```ts
 // All outputs at once
 session.node.data.push(new InteractionData({ select: true }));
@@ -72,3 +78,5 @@ addListener(EVENTTYPE.INTERACTION.SELECT_OFF, (e) => {
 - Always use `isSelectionParameterApi(param)` type guard before accessing `param.settings` (Rule 6).
 - `effectMaterial` is optional — if omitted, selection has no visual highlight.
 - Selection works on scene tree nodes, not mesh faces. Granularity depends on how the Grasshopper model outputs geometry.
+- When `param.settings.nameFilter` is defined, use the library's name filter utilities
+  to target specific nodes — see [name-filters.md](name-filters.md).

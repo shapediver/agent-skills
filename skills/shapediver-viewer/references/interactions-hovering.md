@@ -31,3 +31,5 @@ for (const o in session.outputs) {
 - Hover events fire on **every mouse move** over a hoverable node. Avoid expensive operations (API calls, heavy DOM updates) in hover handlers.
 - `effectMaterial` is optional — if omitted, hover has no visual highlight.
 - Combine with SelectManager/DragManager by passing multiple flags: `new InteractionData({ hover: true, select: true })`.
+- Hovering respects the same `nameFilter` as the interaction it is combined with —
+  see [name-filters.md](name-filters.md).

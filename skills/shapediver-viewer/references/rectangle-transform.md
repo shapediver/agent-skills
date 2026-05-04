@@ -33,5 +33,7 @@ CDN: `new SDVTransformationTools.RectangleTransform(viewport, nodes, opts)`.
 ## Gotchas
 
 - The `plane` option is required — it defines the 2D surface on which the transform operates.
-- `nodes` = array of scene tree nodes to attach the gizmo to, typically from `session.outputs[id].node`.
+- `nodes` = array of scene tree nodes to attach the gizmo to. Use `getNodesByName` from
+  `@shapediver/viewer.features.interaction` to find nodes matching the `nameFilter`
+  patterns — see [name-filters.md](name-filters.md).
 - Use `GumballTransform` instead when the user needs full 3D translate/rotate/scale.

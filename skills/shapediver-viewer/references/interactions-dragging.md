@@ -32,6 +32,13 @@ CDN: `new SDVInteractions.DragManager()`.
 
 ## Mark Nodes as Draggable
 
+When `nameFilter` is defined in `param.settings`, use it to target specific nodes.
+See [name-filters.md](name-filters.md) for the full workflow. For dragging,
+each object in `param.settings.objects` has its own `nameFilter` (a single string per
+object, not an array).
+
+When `nameFilter` is **not defined** (or empty), make all geometry draggable:
+
 ```ts
 session.node.data.push(new InteractionData({ drag: true }));
 session.node.updateVersion();
@@ -67,3 +74,5 @@ for (const o in session.outputs) {
 - Always use `isDraggingParameterApi(param)` type guard before accessing `param.settings` (Rule 6).
 - Forgetting to add a constraint is the most common mistake — dragging will silently fail.
 - `CameraPlaneConstraint` is the easiest to set up. Use `PlaneConstraint` when dragging should be restricted to a specific surface.
+- When `param.settings.nameFilter` or per-object `nameFilter` is defined, use the library's
+  name filter utilities to target specific nodes — see [name-filters.md](name-filters.md).
