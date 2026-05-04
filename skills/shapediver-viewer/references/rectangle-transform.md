@@ -16,25 +16,34 @@ const settings = param.settings?.props ?? param.settings;
 
 The extracted `settings` object may contain:
 
-| Property                        | Type                          | Default      | Description                                              |
-| :------------------------------ | :---------------------------- | :----------- | :------------------------------------------------------- |
-| `selectionColor`                | `string` or effect definition | `"#ffff00"`  | Color/effect of selected objects                         |
-| `availableColor`                | `string` or effect definition | —            | Color/effect highlighting available objects before interaction |
-| `hoverColor`                    | `string` or effect definition | `"#0000ff"`  | Color/effect on hover                                    |
-| `nameFilter`                    | `string[]`     | —            | Filters which scene nodes are selectable                 |
-| `hover`                         | `boolean`      | `true`       | Enable/disable hover effect                              |
-| `minimumSelection`              | `number`       | `0`          | Minimum objects to select                                |
-| `maximumSelection`              | `number`       | `1`          | Maximum objects to select                                |
-| `deselectOnEmpty`               | `boolean`      | `false`      | Deselect all when clicking empty space                   |
-| `objects`                       | `array`        | —            | Object definitions with `nameFilter`, `restrictions`, `dragOrigin`, `dragAnchors` |
-| `restrictions`                  | `array`        | —            | Restriction definitions (plane, geometry, etc.)          |
-| `plane`                         | `object`       | —            | `{ origin, vector_u, vector_v }` — defines the transform plane |
-| `activeMode`                    | `string`       | —            | `"activeOnStart"` to auto-activate on load               |
-| `prompt`                        | `object`       | —            | `{ activeTitle, activeText, inactiveTitle }` — UI text overrides |
+| Property                 | Type                          | Default     | Description                                                                                                                      |
+| :----------------------- | :---------------------------- | :---------- | :------------------------------------------------------------------------------------------------------------------------------- |
+| `selectionColor`         | `string` or effect definition | `"#0d44f0"` | Color/effect of selected objects                                                                                                 |
+| `availableColor`         | `string` or effect definition | `"#ffffff"` | Color/effect highlighting available objects before interaction                                                                   |
+| `hoverColor`             | `string` or effect definition | `"#00ff78"` | Color/effect on hover                                                                                                            |
+| `nameFilter`             | `string[]`                    | —           | Filters which scene nodes are selectable                                                                                         |
+| `hover`                  | `boolean`                     | `true`      | Enable/disable hover effect                                                                                                      |
+| `minimumSelection`       | `number`                      | `0`         | Minimum objects to select                                                                                                        |
+| `maximumSelection`       | `number`                      | `1`         | Maximum objects to select                                                                                                        |
+| `deselectOnEmpty`        | `boolean`                     | `false`     | Deselect all when clicking empty space                                                                                           |
+| `enableTranslation`      | `boolean`                     | `true`      | Enable/disable translation                                                                                                       |
+| `enableRotation`         | `boolean`                     | `true`      | Enable/disable rotation                                                                                                          |
+| `enableScaling`          | `boolean`                     | `true`      | Enable/disable scaling                                                                                                           |
+| `corners`                | `object`                      | —           | `{ bottomLeft?, bottomRight?, topRight?, topLeft? }` — disable specific corner handles (disabled handles are visible but locked) |
+| `edgeControls`           | `object`                      | —           | `{ top?, bottom?, left?, right? }` — disable specific edge handles (disabled handles are visible but locked)                     |
+| `rotation`               | `object`                      | —           | `{ step?, stepThreshold?, min?, max? }` — rotation snapping and range constraints (angles in degrees)                            |
+| `objects`                | `array`                       | —           | Object definitions with `nameFilter` and `restrictions`                                                                          |
+| `objects[].nameFilter`   | `string`                      | —           | Name filter targeting specific scene nodes                                                                                       |
+| `objects[].restrictions` | `string[]`                    | —           | IDs of restrictions to apply to this object                                                                                      |
+| `restrictions`           | `array`                       | —           | Restriction definitions (plane, geometry, etc.)                                                                                  |
+| `plane`                  | `object`                      | —           | `{ origin, vector_u, vector_v }` — defines the transform plane                                                                   |
+| `activeMode`             | `string`                      | —           | `"activeOnStart"` to auto-activate on load                                                                                       |
+| `prompt`                 | `object`                      | —           | `{ activeTitle, activeText, inactiveTitle }` — UI text overrides                                                                 |
 
 **Use ALL defined settings.** The rectangle transform combines selection (to pick nodes)
 with the 2D gizmo. Apply selection settings when setting up the SelectManager, use
-`plane` from settings for the transform plane, and apply `restrictions` and `objects`
+`plane` from settings for the transform plane, and apply `restrictions`, `objects`,
+and the rectangle-specific `enable*`, `corners`, `edgeControls`, and `rotation` settings
 as configured.
 
 **Name filter merging:** Like the gumball, merge `nameFilter` from BOTH the top-level
@@ -50,6 +59,12 @@ object's `nameFilter` to determine which restrictions apply.
 
 ```ts
 import { RectangleTransform } from "@shapediver/viewer.features.transformation-tools";
+import {
+  isRectangleTransformParameterApi,
+  POST_PROCESSING_EFFECT_TYPE,
+  BlendFunction,
+  KernelSize,
+} from "@shapediver/viewer";
 ```
 
 CDN: `SDVTransformationTools.RectangleTransform`.
@@ -82,22 +97,22 @@ const interactionEngine = new InteractionEngine(viewport);
 const selectionEffect = {
   type: POST_PROCESSING_EFFECT_TYPE.OUTLINE,
   properties: {
-    blendFunction: 27,
+    blendFunction: BlendFunction.ALPHA,
     blur: true,
     edgeStrength: 10,
     hiddenEdgeColor: "#0d44f0",
-    kernelSize: 2,
+    kernelSize: KernelSize.LARGE,
     visibleEdgeColor: "#0d44f0",
   },
 };
 const hoverEffect = {
   type: POST_PROCESSING_EFFECT_TYPE.OUTLINE,
   properties: {
-    blendFunction: 27,
+    blendFunction: BlendFunction.ALPHA,
     blur: true,
     edgeStrength: 10,
     hiddenEdgeColor: "#ffffff",
-    kernelSize: 2,
+    kernelSize: KernelSize.LARGE,
     visibleEdgeColor: "#ffffff",
   },
 };
@@ -122,22 +137,100 @@ if (settings?.hover !== false) {
 
 // Mark nodes using addInteractionData with componentId
 addInteractionData(session.node, { select: true, hover: true }, componentId);
-
-// Use plane from settings if defined, otherwise use defaults
-const plane = settings?.plane ?? {
-  origin: [0, 0, 0],
-  vector_u: [1, 0, 0],
-  vector_v: [0, 1, 0],
-};
-
-// Pass settings (including plane and restrictions) to the RectangleTransform constructor.
-// The 4th argument is the componentId — required for proper scoping.
-// Per-object restrictions: match selected nodes against objects[].nameFilter
-// to determine which restriction IDs apply, then resolve them from settings.restrictions.
-const rectangleTransform = new RectangleTransform(viewport, nodes, settings, componentId);
 ```
 
-CDN: `new SDVTransformationTools.RectangleTransform(viewport, nodes, settings, componentId)`.
+### Plane Conversion
+
+The `settings.plane` defines the 2D surface. The App Builder converts it to the
+format expected by `RectangleTransform`, with defaults for missing values:
+
+```ts
+import { RESTRICTION_TYPE } from "@shapediver/viewer.features.interaction";
+
+const plane = {
+  type: RESTRICTION_TYPE.PLANE,
+  origin: settings?.plane?.origin ?? [0, 0, 0],
+  vector_u: settings?.plane?.vector_u ?? [1, 0, 0],
+  vector_v: settings?.plane?.vector_v ?? [0, 1, 0],
+};
+```
+
+CDN: `SDVInteractions.RESTRICTION_TYPE`.
+
+### Per-Object Restriction Matching
+
+Same pattern as [gumball-transform.md](gumball-transform.md): match the selected node
+against each object's `nameFilter` to resolve restrictions. Only applies when
+**exactly 1 node** is selected.
+
+```ts
+import {
+  matchNodesWithPatterns,
+  convertUserDefinedNameFilters,
+  getNodesByName,
+} from "@shapediver/viewer.features.interaction";
+
+// Build outputId → outputName mapping
+const outputIdsToNames = {};
+Object.entries(session.outputs).forEach(([id, out]) => {
+  outputIdsToNames[id] = out.name;
+});
+
+// Pre-convert each object's nameFilter into patterns
+const convertedObjects = (settings?.objects ?? []).map((obj) => ({
+  patterns: convertUserDefinedNameFilters([obj.nameFilter], outputIdsToNames),
+  restrictions: obj.restrictions ?? [],
+}));
+
+// Convert settings.restrictions array to a lookup map by ID
+const restrictionMap = {};
+for (const r of settings?.restrictions ?? []) {
+  restrictionMap[r.id] = r;
+}
+
+// On selection change: create the rectangle transform for selected nodes
+function createRectangleTransform(selectedNodeNames) {
+  const nodesAndNames = getNodesByName([session], selectedNodeNames);
+  const nodes = nodesAndNames.map((n) => n.node);
+  if (nodes.length === 0) return;
+
+  // Resolve per-object restrictions (only when exactly 1 node selected)
+  let restrictionsToUse = undefined;
+  if (nodes.length === 1 && settings?.restrictions?.length > 0) {
+    const resolved = {};
+    for (const obj of convertedObjects) {
+      for (const [, patterns] of Object.entries(obj.patterns)) {
+        const matched = matchNodesWithPatterns(patterns, [nodes[0].node]);
+        if (matched.length > 0) {
+          obj.restrictions.forEach((restrictionId) => {
+            const restriction = restrictionMap[restrictionId];
+            if (restriction) resolved[restrictionId] = restriction;
+          });
+        }
+      }
+    }
+    if (Object.keys(resolved).length > 0) {
+      restrictionsToUse = resolved;
+    }
+  }
+
+  // Pass resolved restrictions and converted plane
+  const rectangleTransform = new RectangleTransform(
+    viewport,
+    nodes,
+    { ...settings, plane, restrictions: restrictionsToUse },
+    componentId,
+  );
+
+  return rectangleTransform;
+}
+
+// IMPORTANT: call rectangleTransform.close() when destroying or recreating
+// (e.g., when selection changes or on teardown)
+```
+
+CDN: `SDVInteractions.getNodesByName(...)`, `SDVInteractions.matchNodesWithPatterns(...)`,
+`new SDVTransformationTools.RectangleTransform(viewport, nodes, settings, componentId)`.
 
 ## Plane Parameters
 
@@ -156,17 +249,21 @@ CDN: `new SDVTransformationTools.RectangleTransform(viewport, nodes, settings, c
 - **Always pass `componentId`** to `SelectManager`, `HoverManager`, `addInteractionData`,
   and `RectangleTransform` (4th constructor arg). Without matching values, interaction
   will not work.
-- The `plane` option is required — use `settings.plane` if defined, otherwise provide a default.
-  It defines the 2D surface on which the transform operates.
+- The `plane` option is required — use `settings.plane` if defined, otherwise provide defaults.
+  It defines the 2D surface on which the transform operates. Convert it to the format with
+  `type: RESTRICTION_TYPE.PLANE`.
 - `nodes` = array of scene tree nodes to attach the gizmo to. Use `getNodesByName` from
   `@shapediver/viewer.features.interaction` to find nodes matching the `nameFilter`
   patterns — see [name-filters.md](name-filters.md).
 - **Merge name filters:** Combine `settings.nameFilter` (top-level array) with each
   `settings.objects[].nameFilter` (string per object) into a single array for selection setup.
-- **Per-object restrictions:** Each object in `settings.objects` may reference restriction
-  IDs that map to entries in `settings.restrictions`. When a node is selected, match it
-  against each object's `nameFilter` to find the applicable restriction IDs, then resolve
-  those to restriction definitions.
+- **Per-object restrictions are only resolved for single-node selection.** When exactly 1
+  node is selected, match it against each object's `nameFilter` patterns using
+  `matchNodesWithPatterns`. For each matching object, resolve its `restrictions` IDs from
+  `settings.restrictions` and pass them to `RectangleTransform` via `{ ...settings, restrictions }`.
+- **Call `rectangleTransform.close()`** when the transform is no longer needed (on selection
+  change, component teardown, or before creating a new instance). Failure to close causes
+  stale gizmos in the viewport.
 - **Pass `settings` to `RectangleTransform`** constructor as the third argument — it uses
   `plane`, `restrictions`, and per-object configuration internally.
 - Apply all selection-related settings (`selectionColor`, `hoverColor`, `minimumSelection`,

@@ -63,18 +63,22 @@ effect** as the second argument. Effects can be:
 The App Builder defaults (recommended):
 
 ```ts
-import { POST_PROCESSING_EFFECT_TYPE } from "@shapediver/viewer";
-// or: const POST_PROCESSING_EFFECT_TYPE = SDV.POST_PROCESSING_EFFECT_TYPE;
+import {
+  POST_PROCESSING_EFFECT_TYPE,
+  BlendFunction,
+  KernelSize,
+} from "@shapediver/viewer";
+// CDN: const { POST_PROCESSING_EFFECT_TYPE, BlendFunction, KernelSize } = SDV;
 
 // Blue outline for selected objects
 const selectionEffect = {
   type: POST_PROCESSING_EFFECT_TYPE.OUTLINE,
   properties: {
-    blendFunction: 27, // BlendFunction.ALPHA
+    blendFunction: BlendFunction.ALPHA,
     blur: true,
     edgeStrength: 10,
     hiddenEdgeColor: "#0d44f0",
-    kernelSize: 2, // KernelSize.LARGE
+    kernelSize: KernelSize.LARGE,
     visibleEdgeColor: "#0d44f0",
   },
 };
@@ -83,11 +87,11 @@ const selectionEffect = {
 const hoverEffect = {
   type: POST_PROCESSING_EFFECT_TYPE.OUTLINE,
   properties: {
-    blendFunction: 27,
+    blendFunction: BlendFunction.ALPHA,
     blur: true,
     edgeStrength: 10,
     hiddenEdgeColor: "#ffffff",
-    kernelSize: 2,
+    kernelSize: KernelSize.LARGE,
     visibleEdgeColor: "#ffffff",
   },
 };
@@ -96,11 +100,11 @@ const hoverEffect = {
 const availableEffect = {
   type: POST_PROCESSING_EFFECT_TYPE.OUTLINE,
   properties: {
-    blendFunction: 27,
+    blendFunction: BlendFunction.ALPHA,
     blur: true,
     edgeStrength: 10,
     hiddenEdgeColor: "#ffffff",
-    kernelSize: 2,
+    kernelSize: KernelSize.LARGE,
     pulseSpeed: 0.5,
     visibleEdgeColor: "#ffffff",
   },
@@ -173,9 +177,9 @@ The extracted `settings` object may contain:
 
 | Property           | Type                          | Default     | Description                                                                       |
 | :----------------- | :---------------------------- | :---------- | :-------------------------------------------------------------------------------- |
-| `selectionColor`   | `string` or effect definition | `"#ffff00"` | Color/effect of selected objects                                                  |
-| `availableColor`   | `string` or effect definition | —           | Color/effect highlighting selectable objects before interaction                   |
-| `hoverColor`       | `string` or effect definition | `"#0000ff"` | Color/effect on hover                                                             |
+| `selectionColor`   | `string` or effect definition | `"#0d44f0"` | Color/effect of selected objects                                                  |
+| `availableColor`   | `string` or effect definition | `"#ffffff"` | Color/effect highlighting selectable objects before interaction                   |
+| `hoverColor`       | `string` or effect definition | `"#00ff78"` | Color/effect on hover                                                             |
 | `nameFilter`       | `string[]`                    | —           | Filters which scene nodes are selectable (see [name-filters.md](name-filters.md)) |
 | `minimumSelection` | `number`                      | `1`         | Minimum objects that must be selected                                             |
 | `maximumSelection` | `number`                      | `1`         | Maximum objects that can be selected                                              |

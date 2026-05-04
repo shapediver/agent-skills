@@ -19,7 +19,11 @@ import {
   HoverManager,
   addInteractionData,
 } from "@shapediver/viewer.features.interaction";
-import { POST_PROCESSING_EFFECT_TYPE } from "@shapediver/viewer";
+import {
+  POST_PROCESSING_EFFECT_TYPE,
+  BlendFunction,
+  KernelSize,
+} from "@shapediver/viewer";
 
 const componentId = hoverParam.id; // or any unique identifier
 
@@ -27,11 +31,11 @@ const componentId = hoverParam.id; // or any unique identifier
 const hoverEffect = {
   type: POST_PROCESSING_EFFECT_TYPE.OUTLINE,
   properties: {
-    blendFunction: 27, // BlendFunction.ALPHA
+    blendFunction: BlendFunction.ALPHA,
     blur: true,
     edgeStrength: 10,
     hiddenEdgeColor: "#ffffff",
-    kernelSize: 2, // KernelSize.LARGE
+    kernelSize: KernelSize.LARGE,
     visibleEdgeColor: "#ffffff",
   },
 };
