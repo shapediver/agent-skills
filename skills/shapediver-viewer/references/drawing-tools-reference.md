@@ -29,12 +29,31 @@ const settings = {
     ...(preConfigured.geometry?.maxPoints != null && {
       maxPoints: preConfigured.geometry.maxPoints,
     }),
+    ...(preConfigured.geometry?.strictMinMaxPoints != null && {
+      strictMinMaxPoints: preConfigured.geometry.strictMinMaxPoints,
+    }),
   },
   restrictions:
     preConfigured.restrictions ??
     {
       /* fallback plane */
     },
+  // Visualization settings (point labels, distance labels, materials)
+  ...(preConfigured.visualization && {
+    visualization: preConfigured.visualization,
+  }),
+  // Key binding overrides
+  ...(preConfigured.keyBindings && {
+    keyBindings: preConfigured.keyBindings,
+  }),
+  // General/behavior settings (autoStart, autoUpdate, closeOnUpdate, displayUnit)
+  ...(preConfigured.general && {
+    general: preConfigured.general,
+  }),
+  // Drawing controls settings
+  ...(preConfigured.controls && {
+    controls: preConfigured.controls,
+  }),
 };
 ```
 
@@ -191,7 +210,7 @@ Do NOT stringify `pointsData` directly without wrapping it in `{ points: ... }`.
 | `'plane'`        | `origin`, `vector_u`, `vector_v` | Constrain to plane. Hosts snaps. |
 | `'point'`        | `point`, `radius`                | Snap to a 3D point.              |
 | `'line'`         | `point1`, `point2`, `radius`     | Snap to a line segment.          |
-| `'geometry'`     | `nodes`                          | Snap to existing scene geometry. |
+| `'geometry'`     | `nodes` or `nameFilter`          | Snap to existing scene geometry. |
 | `'camera_plane'` | —                                | Constrain to camera plane.       |
 
 Common base: `type`, `id`, `priority`, `createHelperObjects`, `hideable`, `rotation`.
@@ -215,6 +234,21 @@ Common base: `type`, `id`, `priority`, `createHelperObjects`, `hideable`, `rotat
 | `autoUpdate`    | `boolean` | Auto-trigger `onUpdate` on every geometry change. |
 | `closeOnUpdate` | `boolean` | Close tool after `onUpdate`.                      |
 | `displayUnit`   | `string`  | Unit label (e.g. `'mm'`, `'cm'`).                 |
+
+### `controls`
+
+Drawing controls settings (extensible). Passed through to the drawing tools SDK.
+
+### `activeMode` and `prompt`
+
+| Property       | Type     | Description                                                 |
+| :------------- | :------- | :---------------------------------------------------------- |
+| `activeMode`   | `string` | `"activeOnStart"` to auto-activate the drawing tool on load |
+| `prompt`       | `object` | `{ activeTitle, activeText, inactiveTitle }` — UI text overrides |
+
+**Use ALL defined settings.** When constructing the `settings` object for `createDrawingTools`,
+include every section that is present in `param.settings`: `geometry`, `restrictions`,
+`visualization`, `keyBindings`, `general`, and `controls`.
 
 ---
 

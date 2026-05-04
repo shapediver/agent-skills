@@ -37,23 +37,56 @@ implements selection — hover is always enabled.
 const selectionParam = Object.values(session.parameters).find(
   isSelectionParameterApi,
 );
+const settings = selectionParam?.settings;
 
 // Selection highlight (on click)
 const selectManager = new SelectManager();
 selectManager.effectMaterial = new MaterialStandardData({
-  color: selectionParam?.settings?.selectionColor ?? "#ffff00",
+  color: settings?.selectionColor ?? "#ffff00",
 });
+if (settings?.maximumSelection != null) {
+  selectManager.maximumSelection = settings.maximumSelection;
+}
+if (settings?.minimumSelection != null) {
+  selectManager.minimumSelection = settings.minimumSelection;
+}
+if (settings?.deselectOnEmpty != null) {
+  selectManager.deselectOnEmpty = settings.deselectOnEmpty;
+}
 interactionEngine.addInteractionManager(selectManager);
 
 // Hover highlight (on mouse move) — ALWAYS add this with selection
-const hoverManager = new HoverManager();
-hoverManager.effectMaterial = new MaterialStandardData({
-  color: selectionParam?.settings?.hoverColor ?? "#0000ff",
-});
-interactionEngine.addInteractionManager(hoverManager);
+// Only skip if settings.hover is explicitly false
+if (settings?.hover !== false) {
+  const hoverManager = new HoverManager();
+  hoverManager.effectMaterial = new MaterialStandardData({
+    color: settings?.hoverColor ?? "#0000ff",
+  });
+  interactionEngine.addInteractionManager(hoverManager);
+}
 ```
 
 CDN: `new SDVInteractions.SelectManager()`, `new SDVInteractions.HoverManager()`.
+
+## `param.settings` Reference
+
+When `isSelectionParameterApi(param)` is `true`, `param.settings` may contain:
+
+| Property           | Type               | Default      | Description                                              |
+| :----------------- | :----------------- | :----------- | :------------------------------------------------------- |
+| `selectionColor`   | `string` (hex)     | `"#ffff00"` | Color of selected objects                                |
+| `availableColor`   | `string` (hex)     | —            | Color highlighting selectable objects before interaction  |
+| `hoverColor`       | `string` (hex)     | `"#0000ff"` | Color on hover                                           |
+| `nameFilter`       | `string[]`         | —            | Filters which scene nodes are selectable (see [name-filters.md](name-filters.md)) |
+| `minimumSelection` | `number`           | `1`          | Minimum objects that must be selected                    |
+| `maximumSelection` | `number`           | `1`          | Maximum objects that can be selected                     |
+| `hover`            | `boolean`          | `true`       | Enable/disable hover effect                              |
+| `deselectOnEmpty`  | `boolean`          | `false`      | Deselect all when clicking empty space                   |
+| `activeMode`       | `string`           | —            | `"activeOnStart"` to auto-activate on load              |
+| `prompt`           | `object`           | —            | `{ activeTitle, activeText, inactiveTitle }` — UI text overrides |
+
+**Use ALL defined settings.** If a setting is present in `param.settings`, apply it.
+Fallback defaults are shown above for when a setting is not defined.
 
 ## Mark Nodes as Selectable and Hoverable
 
@@ -121,15 +154,12 @@ const selectToken = addListener(EVENTTYPE.INTERACTION.SELECT_ON, async (e) => {
   }
 });
 
-const deselectToken = addListener(
-  EVENTTYPE.INTERACTION.SELECT_OFF,
-  async (e) => {
-    if (selectionParam) {
-      selectionParam.value = JSON.stringify({ names: [] });
-      await session.customize();
-    }
-  },
-);
+const deselectToken = addListener(EVENTTYPE.INTERACTION.SELECT_OFF, async (e) => {
+  if (selectionParam) {
+    selectionParam.value = JSON.stringify({ names: [] });
+    await session.customize();
+  }
+});
 ```
 
 ## Teardown / Cleanup

@@ -468,6 +468,8 @@ function ExportButton({ session, exportName }) {
       const exportApi = session.getExportByName(exportName)[0];
       if (!exportApi) return;
       const result = await exportApi.request();
+      // result.content is ShapeDiverResponseExportContent[]
+      // Each item has: href (download URL), format, contentType?, size?
       const fileUrl = result.content?.[0]?.href;
       if (fileUrl) window.open(fileUrl);
     } catch (e) {
@@ -484,7 +486,41 @@ function ExportButton({ session, exportName }) {
 }
 ```
 
+## Pattern G2: Export with Parameter Overrides
+
+Use `request(parameters?)` to export with specific parameter values without
+changing the session state. Pass a map from parameter **ID** to value.
+
+```tsx
+function ExportWithOverrides({ session, exportName }) {
+  const [loading, setLoading] = useState(false);
+  async function handleExport() {
+    setLoading(true);
+    try {
+      const exportApi = session.getExportByName(exportName)[0];
+      if (!exportApi) return;
+      // Override specific parameters for this export only
+      const lengthParam = session.getParameterByName("Length")[0];
+      const result = await exportApi.request({ [lengthParam.id]: 10 });
+      const fileUrl = result.content?.[0]?.href;
+      if (fileUrl) window.open(fileUrl);
+    } catch (e) {
+      console.error("Export error:", e);
+    } finally {
+      setLoading(false);
+    }
+  }
+  return (
+    <button onClick={handleExport} disabled={loading}>
+      {loading ? "Exporting..." : `Export with overrides`}
+    </button>
+  );
+}
+```
+
 ## Pattern H: Data Output Reader
+
+### H1: React hook using `updateCallback`
 
 ```tsx
 function useDataOutput(session, outputName) {
@@ -501,6 +537,20 @@ function useDataOutput(session, outputName) {
   }, [session, outputName]);
   return data;
 }
+```
+
+### H2: CDN / vanilla JS using `EVENTTYPE_OUTPUT.OUTPUT_UPDATED`
+
+```js
+// Global listener for all output updates — useful when monitoring several outputs
+SDV.addListener(SDV.EVENTTYPE_OUTPUT.OUTPUT_UPDATED, (e) => {
+  const outputEvent = e;
+  const outputApi = session.getOutputById(outputEvent.outputId);
+  if (outputApi && outputApi.name === "NumberOfSeats") {
+    document.getElementById("seat-count").textContent =
+      outputApi.content?.[0]?.data ?? "";
+  }
+});
 ```
 
 ## Pattern I: Dynamic ParamControl Router

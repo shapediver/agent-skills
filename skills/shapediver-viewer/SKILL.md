@@ -77,6 +77,19 @@ Do NOT filter or group parameters by guessing names. If grouping is needed, ask 
 for exact names/IDs. `param.type` tells you how to render a control, not which group it
 belongs to.
 
+### App Builder Output Check
+
+If the model metadata (retrieved via the script or provided by the user) contains an output
+named **"AppBuilder"**, pause and ask the user:
+
+> _"This model has an AppBuilder output, which means it is configured for the ShapeDiver
+> App Builder. Are you sure you want to build a custom Viewer API integration instead of
+> using the App Builder? The App Builder may already cover your needs with less effort."_
+
+This may be intentional (e.g., the user needs features beyond what App Builder offers), but
+confirm before proceeding. If the user decides to switch, hand off to the
+`shapediver-appbuilder` skill.
+
 ---
 
 ## Critical Rules
@@ -206,7 +219,7 @@ session.automaticSceneUpdate = true;
 
 - **Parameters:** `session.parameters` (by ID), `session.getParameterByName(name)` (by name)
 - **Outputs:** `session.outputs`, `session.getOutputByName(name)`
-- **Exports:** `session.exports`, `session.getExportByName(name)` — must call `export.request()` explicitly
+- **Exports:** `session.exports`, `session.getExportByName(name)`, `session.getExportByType(type)` — must call `export.request(parameters?)` explicitly; accepts optional `{ [paramId]: value }` overrides
 - **Customize:** `param.value = newVal; await session.customize();`
 - **Sort params for UI:** `Object.values(session.parameters).filter(p => !p.hidden).sort((a,b) => (a.order??0) - (b.order??0))`
 - **Close:** `session.close(); viewport.close();` in cleanup
@@ -255,7 +268,19 @@ When the user wants interaction features, load the specific reference:
   RectangleTransform setup, 2D bounds
 - **Drawing Tools** (draw/edit points and lines): [references/drawing-tools-reference.md](references/drawing-tools-reference.md)
   Rules 10-12, settings tables, restrictions, full CDN + NPM examples, value format
-- **HTML Anchors** (overlay HTML on 3D scene): [references/html-anchors.md](references/html-anchors.md)
-  Text labels, image anchors, custom data anchors
+- **HTML Anchors** (overlay HTML on 3D scene, in-scene UI): [references/html-anchors.md](references/html-anchors.md)
+  Text labels, image anchors, custom data anchors, **in-scene UI elements** (buttons,
+  controls, parameter widgets anchored to 3D objects)
 - **Attribute Visualization** (color-code geometry by data): [references/attribute-visualization.md](references/attribute-visualization.md)
   Color-coded geometry overlays, layers, sdTF data inspection
+- **Post-Processing** (visual effects on rendered scene): [references/post-processing.md](references/post-processing.md)
+  Bloom, SSAO, HBAO, Depth of Field, Outline, Vignette, Selective Bloom, custom effects,
+  manual EffectComposer access, combining outline with interactions
+- **Animations** (animate scene nodes): [references/animations.md](references/animations.md)
+  AnimationData + AnimationTracks, translation/rotation/scale keyframes, looping, glTF animations
+- **Augmented Reality (AR)** (view models in real world): [references/augmented-reality.md](references/augmented-reality.md)
+  AR availability check, launch AR on device, QR code session links, scene setup for AR
+- **Three.js Objects** (add custom three.js objects, access internal meshes): [references/threejs-objects.md](references/threejs-objects.md)
+  ThreejsData, adding Object3D to scene tree, accessing converted geometry, updateCallbackThreeJsObject
+- **glTF Loader** (load external glTF/glb assets into the scene): [references/gltf-loader.md](references/gltf-loader.md)
+  DataEngine.loadContent(), external glTF enrichment, glTF preview tool
