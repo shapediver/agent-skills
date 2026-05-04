@@ -1,11 +1,11 @@
 ---
 name: shapediver-viewer
 description: >
-  Build custom 3D product configurators with the ShapeDiver Viewer V3 API.
-  Use this skill when the user needs to write custom code using @shapediver/viewer
-  or the ShapeDiver CDN bundle — including session/viewport setup, parameter
-  controls, commit patterns, export downloads, React integration, and interaction
-  features (selection, hover, drag, gumball, drawing tools, attribute visualization).
+  Use this skill when the user needs to write custom code using the ShapeDiver
+  Viewer V3 API (@shapediver/viewer or the ShapeDiver CDN bundle) to build a 3D
+  product configurator — including session/viewport setup, parameter controls,
+  commit patterns, export downloads, React integration, and interaction features
+  (selection, hover, drag, gumball, drawing tools, attribute visualization).
   Covers CDN and NPM workflows.
 ---
 
