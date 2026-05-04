@@ -24,10 +24,13 @@ no ticket, no API code, no setup beyond domain whitelisting.
    for the account. Go to the [Settings page](https://www.shapediver.com/app/settings) on
    shapediver.com to manage embedding domains.
    [Read more about embedding domains.](https://help.shapediver.com/doc/setup-domains-for-embedding)
+   If the user provided an API token pair that grants read access on the user, you can check
+   the existing domain settings programmatically via the Platform API.
 
 2. **Allow iframe embedding for the model:** In the model's "Edit" page, find the "Iframe"
    section and check "Allow iframe embedding". Save changes.
    [Read more about iframe settings.](https://help.shapediver.com/doc/iframe-settings)
+   If API tokens are available, you can check this setting using a script via the Platform API.
 
 ---
 

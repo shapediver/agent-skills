@@ -40,15 +40,15 @@ const args = process.argv.slice(2);
 
 if (args.includes('--help') || args.includes('-h') || args.length === 0) {
     process.stderr.write(`\
-Usage: node scripts/get-model-info.js <slug> <accessKeyId> <accessKeySecret> [options]
+Usage: node scripts/get-model-info.js <accessKeyId> <accessKeySecret> <slug> [options]
 
 Retrieve parameter, output, and export metadata for a ShapeDiver model.
 Outputs clean JSON to stdout. Diagnostics go to stderr.
 
 Arguments:
-  slug              Model slug, ID, or GUID (from shapediver.com/app/m/{slug})
   accessKeyId       Platform API access key ID
   accessKeySecret   Platform API access key secret
+  slug              Model slug, ID, or GUID (from shapediver.com/app/m/{slug})
 
 Options:
   --client-id ID    OAuth client ID (default: 827bcbdc-8a5c-481a-b09a-e498074d91ca)
@@ -63,8 +63,8 @@ Exit codes:
   4  Geometry backend / session error
 
 Examples:
-  node scripts/get-model-info.js my-model-slug KEY_ID KEY_SECRET
-  node scripts/get-model-info.js my-model-slug KEY_ID KEY_SECRET --client-id abc-123
+  node scripts/get-model-info.js KEY_ID KEY_SECRET my-model-slug
+  node scripts/get-model-info.js KEY_ID KEY_SECRET my-model-slug --client-id abc-123
 `);
     process.exit(args.length === 0 ? 1 : 0);
 }
@@ -83,11 +83,11 @@ for (let i = 0; i < args.length; i++) {
     }
 }
 
-const [slug, accessKeyId, accessKeySecret] = positional;
+const [accessKeyId, accessKeySecret, slug] = positional;
 
 if (!slug || !accessKeyId || !accessKeySecret) {
     process.stderr.write(
-        'Error: Missing required arguments. Expected: <slug> <accessKeyId> <accessKeySecret>\n' +
+        'Error: Missing required arguments. Expected: <accessKeyId> <accessKeySecret> <slug>\n' +
         'Run with --help for usage information.\n'
     );
     process.exit(1);
@@ -117,7 +117,7 @@ async function main() {
     process.stderr.write(`Fetching model '${slug}'...\n`);
     let model;
     try {
-        const resp = await platformSdk.models.get(slug, ['ticket', 'backend_ticket', 'backend_system']);
+        const resp = await platformSdk.models.get(slug, ['ticket', 'backend_ticket', 'backend_system', 'token_view']);
         model = resp.data;
     } catch (e) {
         process.stderr.write(
@@ -134,42 +134,18 @@ async function main() {
 
     const geometryBackendUrl = model.backend_system.model_view_url;
 
-    // Enable backend access if needed (idempotent)
-    if (!model.backend_ticket) {
-        process.stderr.write('Backend access not enabled. Attempting to enable...\n');
-        try {
-            await platformSdk.models.patch(model.id, { backendaccess: true });
-            // Wait briefly for the change to propagate
-            await new Promise(r => setTimeout(r, 2000));
-            const m2 = await platformSdk.models.get(slug, ['ticket', 'backend_ticket', 'backend_system']);
-            model.backend_ticket = m2.data.backend_ticket;
-            model.ticket = m2.data.ticket;
-        } catch (e) {
-            process.stderr.write(
-                'Error: Backend access is not enabled and could not be enabled automatically.\n' +
-                'To fix this:\n' +
-                '  1. Go to https://www.shapediver.com/app/m/' + slug + '\n' +
-                '  2. Open the "Developers" tab\n' +
-                '  3. Enable "Backend access"\n' +
-                '  4. Copy the Ticket and Model View URL and provide them directly\n' +
-                '     (or re-run this script)\n'
-            );
-            process.exit(3);
-        }
-    }
-
-    if (!model.backend_ticket || !model.backend_ticket.ticket) {
-        process.stderr.write('Error: No backend_ticket available even after enabling backend access.\n');
+    if (!model.access_token) {
+        process.stderr.write('Error: No access token (JWT) available for the model.\n');
         process.exit(3);
     }
 
-    // Step 3: Init session on Geometry Backend
+    // Step 3: Init session on Geometry Backend using JWT
     process.stderr.write('Querying Geometry Backend for model metadata...\n');
-    const geoConfig = new geometryPkg.Configuration({ basePath: geometryBackendUrl });
+    const geoConfig = new geometryPkg.Configuration({ basePath: geometryBackendUrl, accessToken: model.access_token });
     const sessionApi = new geometryPkg.SessionApi(geoConfig);
     let sessionData;
     try {
-        const resp = await sessionApi.createSessionByTicket(model.backend_ticket.ticket);
+        const resp = await sessionApi.createSessionByModel(model.guid);
         sessionData = resp.data;
     } catch (e) {
         const apiMsg = e.response?.data?.message || e.message;
@@ -193,7 +169,7 @@ async function main() {
     // ticket = embedding ticket (for Viewer in browser)
     // backendTicket = backend ticket (for headless/server-side SDK)
     const embeddingTicket = model.ticket?.ticket || null;
-    const backendTicket = model.backend_ticket.ticket;
+    const backendTicket = model.backend_ticket?.ticket || null;
 
     const result = {
         model: {
