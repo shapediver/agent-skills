@@ -113,7 +113,7 @@ ShapeDiver help desk docs:
 
 ```ts
 // Shorthand — pass values directly (parameter name or ID as key)
-await session.customize({ "Length": 1500, "Material Color": "#ff0000" });
+await session.customize({ Length: 1500, "Material Color": "#ff0000" });
 ```
 
 Use the step-by-step `commitParam()` pattern when building dynamic UIs from
@@ -619,6 +619,20 @@ function ParamControl({ param, onCommit }) {
           />
         </label>
       );
+    case "File":
+      return (
+        <label>
+          {label}:
+          <input
+            type="file"
+            accept={(param.format || []).join(",") || undefined}
+            onChange={async (e) => {
+              const file = e.target.files?.[0];
+              if (file) onCommit(param.id, file);
+            }}
+          />
+        </label>
+      );
     default:
       return null;
   }
@@ -777,6 +791,7 @@ Use `MaterialStandardData` to override output materials instantly on the client,
 color pickers. See https://help.shapediver.com/doc/materials for background.
 
 **Key facts:**
+
 - `SDV.MaterialStandardData` / `MaterialStandardData` — the material class.
 - `SDV.GeometryData` / `GeometryData` — present in node data alongside or inside geometry.
 - **⚠️ Do NOT replace material objects with a fresh `new MaterialStandardData()`** — this
@@ -787,10 +802,10 @@ color pickers. See https://help.shapediver.com/doc/materials for background.
 - `output.updateCallback = (newNode) => { ... }` — called every time the server sends new
   output data (after `session.customize()`). Register it to re-apply the color so it
   survives server updates.
-- `node.updateVersion()` + `SDV.sceneTree.root.updateVersion()` + `viewport.update()` —
-  force a re-render. **Also call `data.updateVersion()` on each `GeometryData` and
-  `material.updateVersion()` on the material** at the leaf level, otherwise the renderer
-  doesn't pick up the change (geometry may be 6 levels deep in the scene tree).
+- **Force re-render by calling `updateVersion()` at the leaf level:** call
+  `material.updateVersion()` on each mutated `MaterialStandardData` and
+  `data.updateVersion()` on each `GeometryData`. **Do NOT call `SDV.sceneTree.root.updateVersion()`** —
+  it is not needed here and should not be used.
 - **Do NOT apply the override on init** (set `liveColorHex = null` at startup).
   Only activate it after the user explicitly picks a color.
 - When the user picks a Color List preset (server-side), set `liveColorHex = null`
@@ -799,7 +814,7 @@ color pickers. See https://help.shapediver.com/doc/materials for background.
 ### CDN (plain HTML) — live color picker with staged server commit
 
 ```js
-let liveColorHex = null;  // null = no override; set on first picker input
+let liveColorHex = null; // null = no override; set on first picker input
 const COLOR_OUTPUT_NAMES = ["Shelf", "Doors"]; // outputs to apply color to
 
 // ── After session loads ──────────────────────────────────────────────────────
@@ -815,14 +830,15 @@ function setColorOnMaterialsInNode(node, hex) {
     const d = node.data[i];
     if (d instanceof SDV.MaterialStandardData) {
       d.color = hex;
-      if (typeof d.updateVersion === 'function') d.updateVersion();
+      if (typeof d.updateVersion === "function") d.updateVersion();
     } else if (
       d instanceof SDV.GeometryData &&
       d.material instanceof SDV.MaterialStandardData
     ) {
       d.material.color = hex;
-      if (typeof d.material.updateVersion === 'function') d.material.updateVersion();
-      if (typeof d.updateVersion === 'function') d.updateVersion();
+      if (typeof d.material.updateVersion === "function")
+        d.material.updateVersion();
+      if (typeof d.updateVersion === "function") d.updateVersion();
     }
   }
   for (const child of node.children) setColorOnMaterialsInNode(child, hex);
@@ -860,7 +876,7 @@ registerMaterialUpdateCallbacks(); // call once right after session loads
 // ── Color picker "input" event — runs on every mouse move ────────────────────
 colorPickerEl.addEventListener("input", (e) => {
   liveColorHex = e.target.value;
-  applyLiveColorToOutputs();           // instant client-side update, no server call
+  applyLiveColorToOutputs(); // instant client-side update, no server call
   staged[PARAM_MATERIAL_COLOR] = e.target.value; // stage for later server commit
 });
 
@@ -885,26 +901,30 @@ async function commitStagedToServer() {
 ### NPM / React — same pattern, refs instead of module-level vars
 
 ```tsx
-const liveMaterialRef = useRef(null);
-const colorOverrideActiveRef = useRef(false);
+const liveColorHexRef = useRef<string | null>(null);
 
 // In useEffect after session loads:
-liveMaterialRef.current = new MaterialStandardData();
-registerMaterialUpdateCallbacks(session, viewport, liveMaterialRef, colorOverrideActiveRef);
+registerMaterialUpdateCallbacks(session, viewport, liveColorHexRef);
 
-// In color picker handler:
-function handleColorInput(hex) {
-  liveMaterialRef.current.color = hex;
-  colorOverrideActiveRef.current = true;
-  applyLiveColorToOutputs(session, viewport, liveMaterialRef.current);
-  setStagedColor(hex);
+// Color picker handler — instant client-side update:
+function handleColorInput(hex: string) {
+  liveColorHexRef.current = hex;
+  applyLiveColorToOutputs(session, viewport, liveColorHexRef.current);
+  setStagedColor(hex); // stage for later server commit
 }
 
-// On Apply:
+// Preset dropdown — clear override so server preset shows through:
+function handlePresetChange(index: string) {
+  setStagedPreset(index);
+  liveColorHexRef.current = null;
+}
+
+// On Apply — commit staged values to server:
 async function commitColor() {
   const p = session.parameters[PARAM_MATERIAL_COLOR];
   p.value = stagedColor;
   await session.customize();
+  // updateCallback re-applies liveColorHexRef.current to fresh output nodes
 }
 ```
 
@@ -989,26 +1009,29 @@ Always show the **exact error message** — don't paraphrase or summarize.
 
 ### Common Errors & Fixes
 
-| Error / Symptom                                   | Cause                                 | Fix                                                                                        |
-| :------------------------------------------------ | :------------------------------------ | :----------------------------------------------------------------------------------------- |
-| HTTP 403 on session creation                      | Domain not whitelisted                | Add domain in Embedding Settings on platform                                               |
-| Model geometry never loads                        | `automaticSceneUpdate` set to `false` | Set `session.automaticSceneUpdate = true` (it defaults to `true`)                          |
-| Parameter changes don't update scene              | `customize()` not called              | Call `await session.customize()` after `param.value`                                       |
-| Parameter update silently fails                   | Incorrect value format                | Use `toSDValue()`; check with `param.isValid(value, true)`                                 |
-| Double viewport / WebGL context lost              | React 18 Strict Mode                  | Add `sessionRef.current` guard in `useEffect`; if still blank, remove `<React.StrictMode>` |
-| Blank canvas in Next.js / SSR                     | Module imported at top level          | Dynamic-import inside `useEffect`                                                          |
-| `SDV is not defined`                              | Wrong CDN URL or load order           | Use correct URL; for React CDN use `await loadShapeDiverCDN()`                             |
-| `SDV3 is not defined`                             | Wrong global name                     | The global is `SDV`, not `SDV3`                                                            |
-| StringList shows wrong option                     | Using label instead of index          | Option `value` must be numeric index as string                                             |
-| Color picker shows wrong color                    | Not converting `0xRRGGBBAA`           | Use `slice(2, 8)` — NOT `slice(-6)`.                                                       |
-| Color picker doesn't update model                 | Using `onChange` or `onMouseUp`       | Use Mantine `ColorInput` with `onChangeEnd`, or native DOM `change`.                       |
-| Rate limit / 429                                  | `onChange` committing continuously    | Never `onChange` to commit. See commit table.                                              |
-| Slider commits wrong value                        | Stale closure                         | Use `useRef`. See Pattern D.                                                               |
-| Float slider imprecise                            | Not rounding to `decimalplaces`       | `parseFloat(raw.toFixed(dp))`                                                              |
-| Export returns no content                         | Not requested                         | Call `export.request()` explicitly                                                         |
-| `"Script error"` (no details)                     | Missing `crossorigin`                 | Add `crossorigin="anonymous"` to `<script>` tag                                            |
-| Canvas ref not ready / blank viewport             | Canvas conditionally rendered         | Canvas must ALWAYS be in the DOM. Use an overlay for loading.                              |
-| `"maximum amount of points (undefined) exceeded"` | `maxPoints` set to `undefined`        | Use conditional spread: `...(val != null && { maxPoints: val })`                           |
+| Error / Symptom                                   | Cause                                               | Fix                                                                                        |
+| :------------------------------------------------ | :-------------------------------------------------- | :----------------------------------------------------------------------------------------- |
+| HTTP 403 on session creation                      | Domain not whitelisted                              | Add domain in Embedding Settings on platform                                               |
+| Model geometry never loads                        | `automaticSceneUpdate` set to `false`               | Set `session.automaticSceneUpdate = true` (it defaults to `true`)                          |
+| Parameter changes don't update scene              | `customize()` not called                            | Call `await session.customize()` after `param.value`                                       |
+| Parameter update silently fails                   | Incorrect value format                              | Use `toSDValue()`; check with `param.isValid(value, true)`                                 |
+| Double viewport / WebGL context lost              | React 18 Strict Mode                                | Add `sessionRef.current` guard in `useEffect`; if still blank, remove `<React.StrictMode>` |
+| Blank canvas in Next.js / SSR                     | Module imported at top level                        | Dynamic-import inside `useEffect`                                                          |
+| `SDV is not defined`                              | Wrong CDN URL or load order                         | Use correct URL; for React CDN use `await loadShapeDiverCDN()`                             |
+| `SDV3 is not defined`                             | Wrong global name                                   | The global is `SDV`, not `SDV3`                                                            |
+| StringList shows wrong option                     | Using label instead of index                        | Option `value` must be numeric index as string                                             |
+| Color picker shows wrong color                    | Not converting `0xRRGGBBAA`                         | Use `slice(2, 8)` — NOT `slice(-6)`.                                                       |
+| Color picker doesn't update model                 | Using `onChange` or `onMouseUp`                     | Use Mantine `ColorInput` with `onChangeEnd`, or native DOM `change`.                       |
+| Rate limit / 429                                  | `onChange` committing continuously                  | Never `onChange` to commit. See commit table.                                              |
+| Slider commits wrong value                        | Stale closure                                       | Use `useRef`. See Pattern D.                                                               |
+| Float slider imprecise                            | Not rounding to `decimalplaces`                     | `parseFloat(raw.toFixed(dp))`                                                              |
+| Export returns no content                         | Not requested                                       | Call `export.request()` explicitly                                                         |
+| `"Script error"` (no details)                     | Missing `crossorigin`                               | Add `crossorigin="anonymous"` to `<script>` tag                                            |
+| Canvas ref not ready / blank viewport             | Canvas conditionally rendered                       | Canvas must ALWAYS be in the DOM. Use an overlay for loading.                              |
+| `"maximum amount of points (undefined) exceeded"` | `maxPoints` set to `undefined`                      | Use conditional spread: `...(val != null && { maxPoints: val })`                           |
+| Live color change shows nothing visually          | `updateVersion()` only on output node               | Also call `material.updateVersion()` + `data.updateVersion()` on each leaf `GeometryData`  |
+| Color change removes texture maps                 | Replaced material with `new MaterialStandardData()` | Mutate `color` in-place on existing material — never replace the object                    |
+| Color override lost after server update           | No `updateCallback` on output                       | Register `output.updateCallback` to re-apply the color after `session.customize()`         |
 
 ### Debugging Tips
 

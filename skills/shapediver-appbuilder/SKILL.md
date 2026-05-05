@@ -41,15 +41,19 @@ Collect the following before handing off:
 ### Iframe
 
 - [ ] **Slug or full App Builder URL** (e.g., `https://appbuilder.shapediver.com/v1/main/latest/?slug=my-model`).
+      Alternatively, the model can be referenced via `ticket` + `modelViewUrl` URL parameters,
+      or via a theme JSON file using the `g` parameter.
 
 ### App Builder (with optional theme)
 
-- [ ] **Slug or full App Builder URL**.
+- [ ] **Slug or full App Builder URL** (or `ticket` + `modelViewUrl`).
 - [ ] For themes: branding requirements (colors, fonts, logo).
+      The theme JSON file can also define which model to load via a `sessions` property
+      (containing a `slug`, or `ticket` + `modelViewUrl`), avoiding the need for URL parameters.
 
 ### Fork
 
-- [ ] **Slug or full App Builder URL**.
+- [ ] **Slug or full App Builder URL** (or `ticket` + `modelViewUrl`).
 - [ ] Description of custom UI components or backend integrations needed.
 
 ---
@@ -59,8 +63,9 @@ Collect the following before handing off:
 - The App Builder is NOT the Viewer API. If the user asks for programmatic viewport control,
   camera manipulation, or custom materials, they need the `shapediver-viewer` skill instead.
   Selection and drawing tools ARE supported via App Builder components.
-- The slug is required for all App Builder strategies. It is NOT the same as the ticket or
-  modelViewUrl used by the Viewer API.
+- The slug is the simplest way to reference a model, but `ticket` + `modelViewUrl` URL
+  parameters or a theme JSON `sessions` property also work. The slug is NOT the same as
+  the ticket or modelViewUrl used by the Viewer API.
 - Theme customization only covers branding (colors, fonts, logo). If the user needs custom
   React components or new UI panels, they need the Fork strategy.
 

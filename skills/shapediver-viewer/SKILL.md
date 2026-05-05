@@ -159,6 +159,25 @@ Always call `session.customize()` after setting values.
 Never conditionally render the canvas. Use a loading overlay on top of an always-present canvas.
 See [code-patterns.md](references/code-patterns.md) § React Architectural Rules.
 
+### Rule 12: Live color preview — use client-side material mutation, NOT `session.customize()`
+
+When the user wants **live color preview without committing to the server immediately**,
+do NOT call `session.customize()` on every color picker movement — this causes 429 errors
+and lag. Instead, **mutate `color` on the existing `MaterialStandardData` objects in-place**
+using an `output.updateCallback` + `viewport.update()` pattern. Stage the value and commit
+only when the user explicitly clicks Apply.
+
+**⚠️ Never replace a material object with `new MaterialStandardData()`** — this discards
+all texture maps and breaks the model's appearance. Always mutate the existing object.
+
+Call `updateVersion()` on each mutated `GeometryData` and `MaterialStandardData` at the
+leaf level (not just the output node) — geometry can be 6+ levels deep.
+
+Register `output.updateCallback` so the color override persists after server-triggered
+geometry updates (e.g., after clicking Apply).
+
+See [code-patterns.md](references/code-patterns.md) Pattern L for the full implementation.
+
 ---
 
 ## Setup
