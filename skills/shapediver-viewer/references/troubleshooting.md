@@ -1,7 +1,7 @@
 # ShapeDiver Viewer — Troubleshooting Reference
 
 This file covers advanced troubleshooting scenarios beyond the quick-reference
-table in [code-patterns.md](code-patterns.md#troubleshooting--common-issues).
+table in [advanced-patterns.md](advanced-patterns.md#troubleshooting--common-issues).
 Check that table first for common errors.
 
 ---
@@ -208,7 +208,7 @@ useEffect(() => {
 ### CDN in React
 
 Use the `loadShapeDiverCDN()` utility from
-[code-patterns.md](code-patterns.md#pattern-k-cdn--react-dynamic-script-loading)
+[advanced-patterns.md](advanced-patterns.md#pattern-k-cdn--react-dynamic-script-loading)
 to dynamically load the bundle. Don't mix CDN `<script>` tags with React's
 module system.
 

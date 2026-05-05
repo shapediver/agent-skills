@@ -95,30 +95,30 @@ confirm before proceeding. If the user decides to switch, hand off to the
 ## Critical Rules
 
 These are the most commonly violated patterns. Read all before writing code.
-For code examples of each rule, see [references/code-patterns.md](references/code-patterns.md).
+For code examples of each rule, see [references/core-patterns.md](references/core-patterns.md).
 
 ### Rule 1: NEVER use `onChange` to commit parameters
 
 Every `session.customize()` call is a network request. `onChange` on sliders, color pickers,
 and text inputs fires continuously, causing HTTP 429 rate-limit errors.
 **Dropdown and checkbox are the ONLY controls where `onChange` is safe.**
-Use `onMouseUp`/`onChangeEnd`/`onBlur` for all others. See [code-patterns.md](references/code-patterns.md) § Commit Function.
+Use `onMouseUp`/`onChangeEnd`/`onBlur` for all others. See [core-patterns.md](references/core-patterns.md) § Commit Function.
 
 ### Rule 2: Color picker — commit at end, not on every movement
 
 `onChange` on `<input type="color">` fires on every mouse movement. `onMouseUp` fires when
 opening the picker, not when selecting. Both are wrong.
-See [code-patterns.md](references/code-patterns.md) Pattern E for correct implementations.
+See [ui-patterns.md](references/ui-patterns.md) Pattern E for correct implementations.
 
 ### Rule 3: Slider — use `useRef` to avoid stale closures
 
 React state is async. Reading state in `onMouseUp` captures the previous render's value.
-See [code-patterns.md](references/code-patterns.md) Pattern D.
+See [ui-patterns.md](references/ui-patterns.md) Pattern D.
 
 ### Rule 4: Color format is `0xRRGGBBAA`
 
 `<input type="color">` only accepts `#RRGGBB`. Convert with `slice(2, 8)`, NOT `slice(-6)`.
-See [code-patterns.md](references/code-patterns.md) § Color.
+See [parameter-formatting.md](references/parameter-formatting.md) § Color.
 
 ### Rule 5: Never expose credentials in UI
 
@@ -144,7 +144,7 @@ Reading `param.settings.nameFilter` directly returns `undefined`.
 
 ### Rule 8: Show actual errors, never generic messages
 
-Use `getSDErrorMessage(e)` to extract the real error. See [code-patterns.md](references/code-patterns.md) § Error Extraction.
+Use `getSDErrorMessage(e)` to extract the real error. See [core-patterns.md](references/core-patterns.md) § Error Extraction.
 
 ### Rule 9: Do NOT enable `customizeOnParameterChange`
 
@@ -157,7 +157,7 @@ Always call `session.customize()` after setting values.
 ### Rule 11: Canvas MUST be in the DOM before `createViewport`
 
 Never conditionally render the canvas. Use a loading overlay on top of an always-present canvas.
-See [code-patterns.md](references/code-patterns.md) § React Architectural Rules.
+See [core-patterns.md](references/core-patterns.md) § React Architectural Rules.
 
 ### Rule 12: Live color preview — use client-side material mutation, NOT `session.customize()`
 
@@ -176,7 +176,7 @@ leaf level (not just the output node) — geometry can be 6+ levels deep.
 Register `output.updateCallback` so the color override persists after server-triggered
 geometry updates (e.g., after clicking Apply).
 
-See [code-patterns.md](references/code-patterns.md) Pattern L for the full implementation.
+See [advanced-patterns.md](references/advanced-patterns.md) Pattern L for the full implementation.
 
 ---
 
@@ -202,7 +202,7 @@ Do NOT add extra `<script>` tags for individual features. Globals: `SDV`, `SDVIn
 ### CDN + React
 
 `window.SDV` is not available at mount time. Use the `loadShapeDiverCDN()` loader from
-[code-patterns.md](references/code-patterns.md) Pattern K — do NOT write your own.
+[advanced-patterns.md](references/advanced-patterns.md) Pattern K — do NOT write your own.
 
 ### NPM / React
 
@@ -270,25 +270,20 @@ session.automaticSceneUpdate = true;
 Some models also define **dynamic parameters** in their AppBuilder output that change
 based on model state. See [references/dynamic-parameters.md](references/dynamic-parameters.md).
 
-For detailed API surfaces (Session, Viewport, Parameter, Output, Export, Scene Tree, Events,
-Materials, Animations, Three.js), see [references/api-reference.md](references/api-reference.md).
-Key sections include:
-- **Camera restrictions** (zoom/rotation/pan limits, auto-rotate, orthographic)
-- **Branding & spinner** (logo, background, grid, busy indicator)
-- **Color management** (automaticColorAdjustment, encoding)
-- **Model states** (create, load, apply)
-- **JWT authorization** (refreshJwtToken callback)
-- **Initial parameters** (initialParameterValues on session creation)
-- **Multiple sessions & viewports**
-- **Progress events** (TASK_START, TASK_PROCESS, TASK_END)
-- **Performance tips**
+For detailed API surfaces, load the specific reference needed:
 
-For ready-to-use code patterns (Patterns A–M), parameter value formatting, `toSDValue()`,
-React architecture, and troubleshooting, see [references/code-patterns.md](references/code-patterns.md).
-Key patterns include:
-- **Pattern M** — File upload parameters
-- **Pattern L** — Live material color override (client-side, no server call)
-- **Customize shorthand** — `session.customize({ "Name": value })`
+- **Session API** (creation, customization, parameter/output access, model states, JWT, file uploads): [references/session-api.md](references/session-api.md)
+- **Viewport API** (camera restrictions, environment, branding, screenshots, AR, rendering): [references/viewport-api.md](references/viewport-api.md)
+- **Parameter, Output & Export API** (properties, type guards, export requests, output updates): [references/parameter-output-export-api.md](references/parameter-output-export-api.md)
+- **Scene Tree, Materials, Events, Animations, Three.js** (ITreeNode, MaterialStandardData, event listeners, glTF): [references/scene-tree-materials.md](references/scene-tree-materials.md)
+- **Advanced Topics** (domain whitelisting, JWT, initial parameters, multi-session, performance): [references/advanced-topics.md](references/advanced-topics.md)
+
+For code patterns, load the specific reference needed:
+
+- **Parameter Formatting & `toSDValue()`** (Bool, Int, Float, StringList, Color, File conversion): [references/parameter-formatting.md](references/parameter-formatting.md)
+- **Core Patterns** (commitParam, error extraction, React architectural rules, commit events): [references/core-patterns.md](references/core-patterns.md)
+- **UI Patterns A–I** (CDN setup, React setup, slider, dropdown, color picker, export, output, router): [references/ui-patterns.md](references/ui-patterns.md)
+- **Advanced Patterns J–M & Troubleshooting** (screenshot, CDN+React loader, live material override, file upload, error table): [references/advanced-patterns.md](references/advanced-patterns.md)
 
 For advanced troubleshooting beyond the quick-reference table, see
 [references/troubleshooting.md](references/troubleshooting.md).

@@ -23,8 +23,15 @@ skills/
 ├── shapediver-viewer/
 │   ├── SKILL.md
 │   └── references/
-│       ├── api-reference.md
-│       ├── code-patterns.md
+│       ├── session-api.md
+│       ├── viewport-api.md
+│       ├── parameter-output-export-api.md
+│       ├── scene-tree-materials.md
+│       ├── advanced-topics.md
+│       ├── parameter-formatting.md
+│       ├── core-patterns.md
+│       ├── ui-patterns.md
+│       ├── advanced-patterns.md
 │       ├── interactions-selection.md
 │       ├── interactions-hovering.md
 │       ├── interactions-dragging.md
