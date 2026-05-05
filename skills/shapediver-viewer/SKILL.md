@@ -267,6 +267,9 @@ session.automaticSceneUpdate = true;
 - **`param.order`** — sort order intended by the model author
 - **`param.hidden`** — if `true`, do not show in UI
 
+Some models also define **dynamic parameters** in their AppBuilder output that change
+based on model state. See [references/dynamic-parameters.md](references/dynamic-parameters.md).
+
 For detailed API surfaces (Session, Viewport, Parameter, Output, Export, Scene Tree, Events,
 Materials, Animations, Three.js), see [references/api-reference.md](references/api-reference.md).
 Key sections include:

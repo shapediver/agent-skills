@@ -3,6 +3,9 @@
 Ready-to-use code patterns for all parameter types, exports, outputs, and common UI components.
 Also includes the `toSDValue()` conversion function and parameter value formatting rules.
 
+For dynamic parameters (defined in the AppBuilder output, not in `session.parameters`),
+see [dynamic-parameters.md](dynamic-parameters.md).
+
 ---
 
 ## Parameter Value Formatting

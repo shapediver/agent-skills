@@ -9,6 +9,9 @@ infrastructure (`useSelection` hook) to let users pick nodes before attaching th
 transform gizmo. The `SelectManager` / `MultiSelectManager` setup, `componentId`
 scoping, and event handling described here apply to all three interaction types.
 
+Interaction parameters can also appear as **dynamic parameters** in the AppBuilder output.
+See [dynamic-parameters.md](dynamic-parameters.md).
+
 ## Setup
 
 ```ts

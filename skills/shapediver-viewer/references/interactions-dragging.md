@@ -190,120 +190,9 @@ addInteractionData(
 **At least one restriction is required** — without a restriction, the DragManager doesn't
 know how to constrain movement and dragging does nothing.
 
-### Restriction Types
-
-Restrictions are defined in `settings.restrictions` as an array. Each restriction has
-an `id`, a `type`, and type-specific properties:
-
-| Type            | Properties                                                  | Description                                                      |
-| :-------------- | :---------------------------------------------------------- | :--------------------------------------------------------------- |
-| `"plane"`       | `origin: [x,y,z]`, `vector_u: [x,y,z]`, `vector_v: [x,y,z]` | Constrain to a plane defined by origin and two direction vectors |
-| `"cameraPlane"` | (none required)                                             | Constrain to the plane facing the camera                         |
-| `"line"`        | `origin: [x,y,z]`, `direction: [x,y,z]`                     | Constrain to a line                                              |
-| `"point"`       | `position: [x,y,z]`                                         | Constrain to a fixed point                                       |
-| `"geometry"`    | `nameFilter: string[]`                                      | Constrain to geometry surfaces matched by name filter            |
-
-### How the App Builder Applies Restrictions
-
-Restrictions are applied **dynamically on DRAG_START**, not at setup time. The App Builder:
-
-1. On `DRAG_START` event: identifies which object the dragged node belongs to (by matching
-   against each object's nameFilter patterns)
-2. Looks up the matching object's `restrictions` array (IDs, e.g., `["plane-1"]`)
-3. Resolves each ID to the restriction definition from `settings.restrictions`
-4. Calls `dragManager.addRestriction(restriction)` for each resolved restriction
-5. If NO restrictions match any object, adds a **default plane restriction**:
-   `{ type: "plane", id: "default", origin: [0,0,0], vector_u: [1,0,0], vector_v: [0,1,0] }`
-6. On `DRAG_END` event: calls `dragManager.removeRestrictions()` to clear all
-
-```ts
-import {
-  addListener,
-  removeListener,
-  EVENTTYPE_INTERACTION,
-} from "@shapediver/viewer";
-import {
-  matchNodesWithPatterns,
-  convertUserDefinedNameFilters,
-  RESTRICTION_TYPE,
-} from "@shapediver/viewer.features.interaction";
-
-// Pre-convert per-object patterns for matching
-const convertedObjects = settings.objects.map((obj) => {
-  const patterns = convertUserDefinedNameFilters(
-    [obj.nameFilter],
-    outputIdsToNames,
-  );
-  return {
-    patterns,
-    restrictions: obj.restrictions ?? [],
-  };
-});
-
-// Convert settings.restrictions array to a lookup map by ID
-const restrictionMap = {};
-for (const r of settings.restrictions ?? []) {
-  restrictionMap[r.id] = r;
-}
-
-const tokenDragStart = addListener(EVENTTYPE_INTERACTION.DRAG_START, (e) => {
-  // Only handle events from our DragManager
-  if (e.manager.id !== componentId) return;
-  const dragged = [e.node];
-
-  let addedRestrictions = false;
-  for (const obj of convertedObjects) {
-    for (const [outputId, patterns] of Object.entries(obj.patterns)) {
-      const matched = matchNodesWithPatterns(patterns, dragged);
-      if (matched.length > 0 && obj.restrictions.length > 0) {
-        obj.restrictions.forEach((restrictionId) => {
-          const restriction = restrictionMap[restrictionId];
-          if (restriction) {
-            e.manager.addRestriction(restriction);
-            addedRestrictions = true;
-          }
-        });
-      }
-    }
-  }
-
-  // Fallback: default XY plane if no object-specific restrictions matched
-  if (!addedRestrictions) {
-    e.manager.addRestriction({
-      type: RESTRICTION_TYPE.PLANE,
-      id: "default",
-      origin: [0, 0, 0],
-      vector_u: [1, 0, 0],
-      vector_v: [0, 1, 0],
-    });
-  }
-
-  // Trigger initial move so restrictions take effect
-  e.manager.onMove(e.event, e.ray, []);
-});
-
-const tokenDragEnd = addListener(EVENTTYPE_INTERACTION.DRAG_END, (e) => {
-  if (e.manager.id !== componentId) return;
-  // Clear all restrictions after drag ends
-  e.manager.removeRestrictions();
-});
-
-// Cleanup: removeListener(tokenDragStart); removeListener(tokenDragEnd);
-```
-
-CDN: `SDVInteractions.matchNodesWithPatterns(...)`, `SDVInteractions.RESTRICTION_TYPE`.
-
-### Simple Case (No `settings.objects`)
-
-When no per-object restrictions are defined, add a fallback constraint at setup time:
-
-```ts
-// Camera-plane constraint (object follows mouse on screen plane)
-dragManager.addDragConstraint(new CameraPlaneConstraint());
-
-// OR fixed plane constraint (e.g., XY plane at origin)
-// dragManager.addDragConstraint(new PlaneConstraint([0, 0, 1], [0, 0, 0]));
-```
+See [restrictions.md](restrictions.md) for restriction types, geometry restriction
+node resolution, per-object matching patterns, and the drag-specific DRAG_START/DRAG_END
+restriction application flow.
 
 ## Drag Event Value Format
 
@@ -327,6 +216,119 @@ addListener(EVENTTYPE_INTERACTION.DRAG_END, async (e) => {
 });
 ```
 
+## Re-Marking Nodes After Output Updates
+
+When parameters change (e.g., shelf count), the backend regenerates geometry and output
+nodes are replaced. The `InteractionData` previously attached to old nodes is lost.
+**You must re-mark nodes after every output update.**
+
+The App Builder uses `output.updateCallback` (called with `(newNode, oldNode)`) to
+clean up old InteractionData and re-apply it to new nodes. For CDN / plain HTML usage,
+listen for `EVENTTYPE_OUTPUT.OUTPUT_UPDATED` events instead:
+
+```ts
+import { addListener, EVENTTYPE_OUTPUT } from "@shapediver/viewer";
+
+// Debounce to avoid marking stale nodes during rapid output updates
+let markTimer = null;
+addListener(EVENTTYPE_OUTPUT.OUTPUT_UPDATED, () => {
+  clearTimeout(markTimer);
+  markTimer = setTimeout(() => markDraggableNodes(), 150);
+});
+```
+
+**Why debounce:** A single `customize()` call may fire multiple `OUTPUT_UPDATED` events
+(one per output). Without debouncing, `markDraggableNodes()` runs against intermediate
+states where some output nodes are already replaced but others are stale.
+
+## Accumulating Drag Transforms
+
+Each `DRAG_END` event provides a single transformation. When the user drags multiple
+objects before confirming, **accumulate** the transforms:
+
+```ts
+let accumulatedDraggedObjects = [];
+
+addListener(EVENTTYPE_INTERACTION.DRAG_END, async (e) => {
+  if (e.manager.id !== componentId) return;
+  e.manager.removeRestrictions();
+
+  // Apply the drag matrix to the node's local transforms
+  e.node.transformations.push({
+    id: "SD_drag_matrix",
+    matrix: e.matrix,
+  });
+  e.node.updateVersion();
+
+  // Accumulate for later commit
+  const existing = accumulatedDraggedObjects.find(
+    (o) => o.name === e.node.name,
+  );
+  if (existing) {
+    existing.transformation = Array.from(e.matrix);
+    existing.restrictionId = e.restriction?.id;
+    existing.dragAnchorId = e.dragAnchor?.id;
+  } else {
+    accumulatedDraggedObjects.push({
+      name: e.node.name,
+      transformation: Array.from(e.matrix),
+      restrictionId: e.restriction?.id,
+      dragAnchorId: e.dragAnchor?.id,
+    });
+  }
+
+  // Send accumulated state to the backend
+  await commitDragToBackend();
+});
+```
+
+### Accept / Reject Pattern
+
+When using accept/reject mode, send accumulated objects on "Accept" and clear local
+transforms on "Reject":
+
+```ts
+function clearDragState() {
+  // Remove local transform overrides from all nodes
+  for (const out of Object.values(session.outputs)) {
+    if (!out.node) continue;
+    out.node.traverse((n) => {
+      n.transformations = n.transformations.filter(
+        (t) => t.id !== "SD_drag_matrix",
+      );
+      n.updateVersion();
+    });
+  }
+  accumulatedDraggedObjects = [];
+}
+```
+
+## Dragging from Dynamic Parameters
+
+Dragging settings often come from **dynamic parameters** defined in the AppBuilder
+output JSON rather than from real Grasshopper parameters. See
+[dynamic-parameters.md](dynamic-parameters.md) for how dynamic parameters work.
+
+When implementing dragging with the Viewer API (not App Builder), you can read
+the drag settings directly from the AppBuilder output:
+
+```ts
+function getDragSettings() {
+  const abOutput = session.getOutputByName("AppBuilder")[0];
+  const raw = abOutput?.content?.[0]?.data;
+  if (!raw) return null;
+  const json = typeof raw === "string" ? JSON.parse(raw) : raw;
+  const dragParam = json.parameters?.find(
+    (p) => p.settings?.type === "dragging",
+  );
+  if (!dragParam) return null;
+  return dragParam.settings?.props ?? dragParam.settings;
+}
+```
+
+The returned `settings` object has the same structure as documented in the
+`param.settings` reference above (`objects`, `restrictions`, `hover`, etc.).
+
 ## Gotchas
 
 - Always use `isDraggingParameterApi(param)` type guard before accessing `param.settings` (Rule 6).
@@ -337,20 +339,30 @@ addListener(EVENTTYPE_INTERACTION.DRAG_END, async (e) => {
 - **Always pass `componentId`** to both `new DragManager(componentId, effect)` and
   `addInteractionData(node, settings, componentId)`. Without matching values,
   dragging will not work.
-- **Restrictions are applied dynamically on DRAG_START**, not at setup time. The App Builder
-  adds them on `DRAG_START` by matching the dragged node against object patterns, and
-  removes them on `DRAG_END` with `dragManager.removeRestrictions()`.
-- If no restrictions are defined and no objects match, the App Builder falls back to a
-  default XY plane restriction: `{ type: "plane", origin: [0,0,0], vector_u: [1,0,0], vector_v: [0,1,0] }`.
+- **Restrictions** — see [restrictions.md](restrictions.md) for restriction types,
+  dynamic DRAG_START application, and default fallback behavior.
 - `dragOrigin` and `dragAnchors` are per-object properties passed to `addInteractionData`
   — they control where the drag starts and provide snap points during dragging.
 - When the extracted `settings.objects` is defined, iterate over it to set up per-object name
   filters, restrictions, drag origins, and drag anchors.
-- When the extracted `settings.restrictions` is defined, build a lookup map by ID and
-  resolve restriction IDs from each object on DRAG_START events.
+- When the extracted `settings.restrictions` is defined, see [restrictions.md](restrictions.md)
+  for how to build the lookup map and resolve restriction IDs on DRAG_START events.
 - **Always add a HoverManager** alongside DragManager unless `settings.hover` is explicitly
   `false`. Without hover feedback, users have no indication that geometry is draggable.
 - When the extracted `settings.nameFilter` or per-object `nameFilter` is defined, use the library's
   name filter utilities to target specific nodes — see [name-filters.md](name-filters.md).
 - **Never use `new InteractionData()` directly** — use `addInteractionData` for proper
   `componentId` scoping.
+- **`addInteractionData` marks nodes at depth, not the output root.** The function traverses
+  the output node's children using `gatherNodesForPattern` and adds `InteractionData` to the
+  deepest matching nodes. The `IntersectionManager` singleton uses these leaf-level nodes
+  (which have `GeometryData` + `convertedObject` for Three.js raycasting) to perform hit
+  tests. It rebuilds its node catalog on `VIEWPORT_UPDATED` events.
+- **Debounce `markDraggableNodes()` after output updates.** A single `customize()` call
+  fires multiple `OUTPUT_UPDATED` events. Running the marking function on each event
+  creates a race condition where you mark nodes from a stale output that's immediately
+  replaced. Debounce with ~150ms.
+- **Sending drag values for dynamic parameters:** When dragging is defined as a dynamic
+  parameter in the AppBuilder output, send the accumulated drag value via the `AppBuilder`
+  STRING input parameter, not via the dynamic parameter ID directly. See
+  [dynamic-parameters.md](dynamic-parameters.md).

@@ -4,6 +4,9 @@
 
 Uses `@shapediver/viewer.features.drawing-tools` (NPM) or `SDVDrawingTools` (CDN).
 
+Drawing parameters can also appear as **dynamic parameters** in the AppBuilder output.
+See [dynamic-parameters.md](dynamic-parameters.md).
+
 ---
 
 ## Critical Rules

@@ -213,80 +213,27 @@ const plane = {
 
 CDN: `SDVInteractions.RESTRICTION_TYPE`.
 
-### Per-Object Restriction Matching
+### Restrictions
 
-Same pattern as [gumball-transform.md](gumball-transform.md): match the selected node
-against each object's `nameFilter` to resolve restrictions. Only applies when
-**exactly 1 node** is selected.
+See [restrictions.md](restrictions.md) for restriction types, geometry restriction
+node resolution, and per-object restriction matching patterns.
+
+When creating the rectangle transform for a selected node, resolve per-object
+restrictions and pass them along with the plane:
 
 ```ts
-import {
-  matchNodesWithPatterns,
-  convertUserDefinedNameFilters,
-  getNodesByName,
-} from "@shapediver/viewer.features.interaction";
-
-// Build outputId → outputName mapping
-const outputIdsToNames = {};
-Object.entries(session.outputs).forEach(([id, out]) => {
-  outputIdsToNames[id] = out.name;
-});
-
-// Pre-convert each object's nameFilter into patterns
-const convertedObjects = (settings?.objects ?? []).map((obj) => ({
-  patterns: convertUserDefinedNameFilters([obj.nameFilter], outputIdsToNames),
-  restrictions: obj.restrictions ?? [],
-}));
-
-// Convert settings.restrictions array to a lookup map by ID
-const restrictionMap = {};
-for (const r of settings?.restrictions ?? []) {
-  restrictionMap[r.id] = r;
-}
-
-// On selection change: create the rectangle transform for selected nodes
-function createRectangleTransform(selectedNodeNames) {
-  const nodesAndNames = getNodesByName([session], selectedNodeNames);
-  const nodes = nodesAndNames.map((n) => n.node);
-  if (nodes.length === 0) return;
-
-  // Resolve per-object restrictions (only when exactly 1 node selected)
-  let restrictionsToUse = undefined;
-  if (nodes.length === 1 && settings?.restrictions?.length > 0) {
-    const resolved = {};
-    for (const obj of convertedObjects) {
-      for (const [, patterns] of Object.entries(obj.patterns)) {
-        const matched = matchNodesWithPatterns(patterns, [nodes[0].node]);
-        if (matched.length > 0) {
-          obj.restrictions.forEach((restrictionId) => {
-            const restriction = restrictionMap[restrictionId];
-            if (restriction) resolved[restrictionId] = restriction;
-          });
-        }
-      }
-    }
-    if (Object.keys(resolved).length > 0) {
-      restrictionsToUse = resolved;
-    }
-  }
-
-  // Pass resolved restrictions and converted plane
-  const rectangleTransform = new RectangleTransform(
-    viewport,
-    nodes,
-    { ...settings, plane, restrictions: restrictionsToUse },
-    componentId,
-  );
-
-  return rectangleTransform;
-}
+const rectangleTransform = new RectangleTransform(
+  viewport,
+  nodes,
+  { ...settings, plane, restrictions: restrictionsToUse },
+  componentId,
+);
 
 // IMPORTANT: call rectangleTransform.close() when destroying or recreating
 // (e.g., when selection changes or on teardown)
 ```
 
-CDN: `SDVInteractions.getNodesByName(...)`, `SDVInteractions.matchNodesWithPatterns(...)`,
-`new SDVTransformationTools.RectangleTransform(viewport, nodes, settings, componentId)`.
+CDN: `new SDVTransformationTools.RectangleTransform(viewport, nodes, settings, componentId)`.
 
 ## Plane Parameters
 
@@ -295,6 +242,16 @@ CDN: `SDVInteractions.getNodesByName(...)`, `SDVInteractions.matchNodesWithPatte
 | `plane.origin`   | `number[]` | Center point of the constraint plane. |
 | `plane.vector_u` | `number[]` | First direction vector of the plane.  |
 | `plane.vector_v` | `number[]` | Second direction vector of the plane. |
+
+## Rectangle Transform from Dynamic Parameters
+
+Rectangle transform settings can come from **dynamic parameters** defined in the AppBuilder
+output JSON rather than from real Grasshopper parameters. See
+[dynamic-parameters.md](dynamic-parameters.md) for the full pattern.
+
+When using dynamic parameters, read the rectangle transform settings from the AppBuilder
+output and send transform values back via the `AppBuilder` STRING parameter instead of
+setting the parameter value directly.
 
 ## Gotchas
 
@@ -318,10 +275,8 @@ CDN: `SDVInteractions.getNodesByName(...)`, `SDVInteractions.matchNodesWithPatte
   patterns — see [name-filters.md](name-filters.md).
 - **Merge name filters:** Combine `settings.nameFilter` (top-level array) with each
   `settings.objects[].nameFilter` (string per object) into a single array for selection setup.
-- **Per-object restrictions are only resolved for single-node selection.** When exactly 1
-  node is selected, match it against each object's `nameFilter` patterns using
-  `matchNodesWithPatterns`. For each matching object, resolve its `restrictions` IDs from
-  `settings.restrictions` and pass them to `RectangleTransform` via `{ ...settings, restrictions }`.
+- **Per-object restrictions** — see [restrictions.md](restrictions.md) for the full
+  matching and resolution pattern.
 - **Call `rectangleTransform.close()`** when the transform is no longer needed (on selection
   change, component teardown, or before creating a new instance). Failure to close causes
   stale gizmos in the viewport.
@@ -332,3 +287,5 @@ CDN: `SDVInteractions.getNodesByName(...)`, `SDVInteractions.matchNodesWithPatte
 - Use `GumballTransform` instead when the user needs full 3D translate/rotate/scale.
 - **Never use `new InteractionData()` directly** — use `addInteractionData` for proper
   `componentId` scoping.
+- **Restrictions** — see [restrictions.md](restrictions.md) for restriction types,
+  geometry restriction node resolution, and per-object matching.

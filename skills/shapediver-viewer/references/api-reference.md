@@ -76,6 +76,11 @@ whichever the user provides.
 - **`session.parameterSessionValues`**: snapshot from last successful `customize()`.
 - **`session.parameterDefaultValues`**: model defaults.
 - **`session.resetParameterValues(force?)`**: resets all to defaults and customizes.
+
+Some models also define **dynamic parameters** in their AppBuilder output — these are
+not found in `session.parameters` but in the `"AppBuilder"` output JSON. See
+[dynamic-parameters.md](dynamic-parameters.md).
+
 - **`session.updateOutputs()`**: applies pending scene tree changes from `updateOutputContent()`
   calls made with `preventUpdate: true`.
 - **`session.close()`**: terminates session and frees resources.

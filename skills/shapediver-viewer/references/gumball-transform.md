@@ -179,80 +179,27 @@ addInteractionData(session.node, { select: true, hover: true }, componentId);
 See [interactions-selection.md](interactions-selection.md) § Creating the Managers for the
 full `MultiSelectManager` vs `SelectManager` decision logic.
 
-### Per-Object Restriction Matching
+### Restrictions
 
-When a node is selected, match it against each object's `nameFilter` to find which
-restrictions apply. The App Builder only resolves per-object restrictions when
-**exactly 1 node** is selected.
+See [restrictions.md](restrictions.md) for restriction types, geometry restriction
+node resolution, and per-object restriction matching patterns.
+
+When creating the gumball for a selected node, resolve per-object restrictions
+and pass them to the constructor:
 
 ```ts
-import {
-  matchNodesWithPatterns,
-  convertUserDefinedNameFilters,
-  getNodesByName,
-} from "@shapediver/viewer.features.interaction";
-
-// Build outputId → outputName mapping
-const outputIdsToNames = {};
-Object.entries(session.outputs).forEach(([id, out]) => {
-  outputIdsToNames[id] = out.name;
-});
-
-// Pre-convert each object's nameFilter into patterns
-const convertedObjects = (settings?.objects ?? []).map((obj) => ({
-  patterns: convertUserDefinedNameFilters([obj.nameFilter], outputIdsToNames),
-  restrictions: obj.restrictions ?? [],
-}));
-
-// Convert settings.restrictions array to a lookup map by ID
-const restrictionMap = {};
-for (const r of settings?.restrictions ?? []) {
-  restrictionMap[r.id] = r;
-}
-
-// On selection change: create the gumball for selected nodes
-function createGumball(selectedNodeNames) {
-  const nodesAndNames = getNodesByName([session], selectedNodeNames);
-  const nodes = nodesAndNames.map((n) => n.node);
-  if (nodes.length === 0) return;
-
-  // Resolve per-object restrictions (only when exactly 1 node selected)
-  let restrictionsToUse = undefined;
-  if (nodes.length === 1 && settings?.restrictions?.length > 0) {
-    const resolved = {};
-    for (const obj of convertedObjects) {
-      for (const [, patterns] of Object.entries(obj.patterns)) {
-        const matched = matchNodesWithPatterns(patterns, [nodes[0].node]);
-        if (matched.length > 0) {
-          obj.restrictions.forEach((restrictionId) => {
-            const restriction = restrictionMap[restrictionId];
-            if (restriction) resolved[restrictionId] = restriction;
-          });
-        }
-      }
-    }
-    if (Object.keys(resolved).length > 0) {
-      restrictionsToUse = resolved;
-    }
-  }
-
-  // Pass resolved restrictions (or undefined if none matched)
-  const gumball = new GumballTransform(
-    viewport,
-    nodes,
-    { ...settings, restrictions: restrictionsToUse },
-    componentId,
-  );
-
-  return gumball;
-}
+const gumball = new GumballTransform(
+  viewport,
+  nodes,
+  { ...settings, restrictions: restrictionsToUse },
+  componentId,
+);
 
 // IMPORTANT: call gumball.close() when destroying or recreating the gumball
 // (e.g., when selection changes or on teardown)
 ```
 
-CDN: `SDVInteractions.getNodesByName(...)`, `SDVInteractions.matchNodesWithPatterns(...)`,
-`new SDVTransformationTools.GumballTransform(viewport, nodes, settings, componentId)`.
+CDN: `new SDVTransformationTools.GumballTransform(viewport, nodes, settings, componentId)`.
 
 ## Listen for Transform Changes
 
@@ -267,6 +214,16 @@ addListener(EVENTTYPE_TRANSFORMATION_TOOLS.MATRIX_CHANGED, async (e) => {
   }
 });
 ```
+
+## Gumball from Dynamic Parameters
+
+Gumball transform settings can come from **dynamic parameters** defined in the AppBuilder
+output JSON rather than from real Grasshopper parameters. See
+[dynamic-parameters.md](dynamic-parameters.md) for the full pattern.
+
+When using dynamic parameters, read the gumball settings from the AppBuilder output
+and send transform values back via the `AppBuilder` STRING parameter instead of
+setting the parameter value directly.
 
 ## Gotchas
 
@@ -287,10 +244,8 @@ addListener(EVENTTYPE_TRANSFORMATION_TOOLS.MATRIX_CHANGED, async (e) => {
   patterns — see [name-filters.md](name-filters.md).
 - **Merge name filters:** Combine `settings.nameFilter` (top-level array) with each
   `settings.objects[].nameFilter` (string per object) into a single array for selection setup.
-- **Per-object restrictions are only resolved for single-node selection.** When exactly 1
-  node is selected, match it against each object's `nameFilter` patterns using
-  `matchNodesWithPatterns`. For each matching object, resolve its `restrictions` IDs from
-  `settings.restrictions` and pass them to `GumballTransform` via `{ ...settings, restrictions }`.
+- **Per-object restrictions** — see [restrictions.md](restrictions.md) for the full
+  matching and resolution pattern.
 - **Call `gumball.close()`** when the gumball is no longer needed (on selection change,
   component teardown, or before creating a new gumball instance). Failure to close causes
   stale gizmos in the viewport.
@@ -301,3 +256,5 @@ addListener(EVENTTYPE_TRANSFORMATION_TOOLS.MATRIX_CHANGED, async (e) => {
 - The `MATRIX_CHANGED` event fires on every gizmo interaction — call `session.customize()` to send the transformation to the backend.
 - **Never use `new InteractionData()` directly** — use `addInteractionData` for proper
   `componentId` scoping.
+- **Restrictions** — see [restrictions.md](restrictions.md) for restriction types,
+  geometry restriction node resolution, and per-object matching.
