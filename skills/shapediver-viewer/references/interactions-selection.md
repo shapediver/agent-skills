@@ -19,6 +19,10 @@ import {
   MultiSelectManager,
   HoverManager,
   addInteractionData,
+  convertUserDefinedNameFilters,
+  gatherNodesForPattern,
+  matchNodesWithPatterns,
+  checkNodeNameMatch,
 } from "@shapediver/viewer.features.interaction";
 import type { ITreeNode } from "@shapediver/viewer.shared.node-tree";
 import {
@@ -280,7 +284,8 @@ function markOutputsInteractive() {
 
     // Re-apply when node is replaced by customize()
     output.updateCallback = (newNode, oldNode) => {
-      // Clean up old node's interaction data
+      // Clean up old node — deselect first, THEN remove InteractionData
+      // (must happen while nodes are still live in the scene)
       if (oldNode) {
         oldNode.traverse((n) => {
           for (const data of [...n.data]) {
@@ -288,6 +293,11 @@ function markOutputsInteractive() {
               data instanceof InteractionData &&
               data.restrictedManagers.includes(componentId)
             ) {
+              // Deselect before removing data so the outline effect is
+              // properly released while the node reference is still valid
+              if (data.interactionStates?.select === true) {
+                selectManager.deselect(n);
+              }
               n.removeData(data);
               n.updateVersion();
             }
@@ -309,9 +319,62 @@ markOutputsInteractive();
 output nodes. Without re-applying `InteractionData` via `updateCallback`, **selection
 stops working after the first click**.
 
+## Node Name Format — `matchNodesWithPatterns`
+
+**⚠️ CRITICAL: Do NOT use `e.node.name` directly as the selection parameter value.**
+
+`e.node.name` returns only the leaf node name (e.g., `"Wall_1"`), but the Grasshopper
+model expects **full dot-separated names** including the output prefix (e.g.,
+`"Walls.Wall_1"`). The App Builder uses `matchNodesWithPatterns()` to resolve the
+correct names.
+
+`matchNodesWithPatterns` takes the output patterns (from `convertUserDefinedNameFilters`)
+and an array of selected nodes, and returns the matching dot-separated name strings.
+
+```ts
+import {
+  convertUserDefinedNameFilters,
+  matchNodesWithPatterns,
+} from "@shapediver/viewer.features.interaction";
+
+// Build output patterns once during setup
+const outputIdsToNames = {};
+Object.entries(session.outputs).forEach(([id, out]) => {
+  outputIdsToNames[id] = out.name;
+});
+const outputPatterns = convertUserDefinedNameFilters(
+  nameFilter, // string[] from extracted settings.nameFilter
+  outputIdsToNames,
+);
+
+// In event handlers, resolve node(s) to their full dot-separated names:
+function getSelectedNames(nodes) {
+  const names = [];
+  for (const outputId in outputPatterns) {
+    names.push(...matchNodesWithPatterns(outputPatterns[outputId], nodes));
+  }
+  return names;
+}
+
+// Single: getSelectedNames([e.node])  → ["Walls.Wall_1"]
+// Multi:  getSelectedNames(e.nodes)   → ["Walls.Wall_1", "Walls.Wall_2"]
+```
+
+CDN: `SDVInteractions.convertUserDefinedNameFilters(...)`,
+`SDVInteractions.matchNodesWithPatterns(...)`.
+
+**When `nameFilter` is not defined**, `e.node.name` is acceptable as a fallback since
+there are no output-scoped patterns to match against. However, using
+`matchNodesWithPatterns` is always correct and preferred.
+
 ## Listen for Selection Events
 
 Store the tokens returned by `addListener` — you need them for cleanup.
+
+**Always filter events by `componentId`:** Selection events are global — every
+`SelectManager` in the scene fires them. Use `e.manager.id !== componentId` to ignore
+events from other managers. Without this guard, multiple selection parameters
+interfere with each other.
 
 ### Single Selection (`maximumSelection` ≤ 1)
 
@@ -323,15 +386,21 @@ provides `e.node` (a single node).
 
 ```ts
 const selectToken = addListener(EVENTTYPE.INTERACTION.SELECT_ON, async (e) => {
+  // Ignore events from other managers
+  if (e.manager.id !== componentId) return;
   if (selectionParam) {
-    selectionParam.value = JSON.stringify({ names: [e.node.name] });
+    const names = getSelectedNames([e.node]);
+    selectionParam.value = JSON.stringify({ names });
     await session.customize();
+    // Restore highlight on new nodes (see "Restoring Selection" below)
+    restoreSelection(session, componentId, selectManager, names);
   }
 });
 
 const deselectToken = addListener(
   EVENTTYPE.INTERACTION.SELECT_OFF,
   async (e) => {
+    if (e.manager.id !== componentId) return;
     if (selectionParam) {
       selectionParam.value = JSON.stringify({ names: [] });
       await session.customize();
@@ -351,11 +420,13 @@ which nodes are selected and enforces the min/max constraints.
 const multiSelectOnToken = addListener(
   EVENTTYPE.INTERACTION.MULTI_SELECT_ON,
   async (e) => {
+    if (e.manager.id !== componentId) return;
     if (selectionParam) {
-      const names = e.nodes.map((n) => n.name);
+      const names = getSelectedNames(e.nodes);
       selectionParam.value = JSON.stringify({ names });
       // See "Acceptance Logic" below — you may defer customize()
       await session.customize();
+      restoreSelection(session, componentId, selectManager, names);
     }
   },
 );
@@ -363,10 +434,12 @@ const multiSelectOnToken = addListener(
 const multiSelectOffToken = addListener(
   EVENTTYPE.INTERACTION.MULTI_SELECT_OFF,
   async (e) => {
+    if (e.manager.id !== componentId) return;
     if (selectionParam) {
-      const names = e.nodes.map((n) => n.name);
+      const names = getSelectedNames(e.nodes);
       selectionParam.value = JSON.stringify({ names });
       await session.customize();
+      restoreSelection(session, componentId, selectManager, names);
     }
   },
 );
@@ -374,6 +447,73 @@ const multiSelectOffToken = addListener(
 
 **Do NOT listen for `SELECT_ON`/`SELECT_OFF` when using `MultiSelectManager`.** Multi-
 selection uses its own event types. Mixing them causes duplicate or missing updates.
+
+## Restoring Selection After Computation
+
+`session.customize()` replaces output nodes. The `SelectManager` still holds a
+reference to the old (now-dead) node, so the selection outline disappears even
+though the parameter value is correct. The App Builder solves this by
+**re-selecting the matching nodes on the new geometry** after each computation.
+
+Use `checkNodeNameMatch` to find new nodes by their dot-separated names, then
+call `selectManager.select()` to re-apply the outline.
+
+```ts
+import {
+  InteractionData,
+  checkNodeNameMatch,
+} from "@shapediver/viewer.features.interaction";
+
+function restoreSelection(session, componentId, selectMgr, selectedNames) {
+  if (!selectMgr || !session) return;
+
+  for (const outputId in session.outputs) {
+    const outputNode = session.outputs[outputId]?.node;
+    if (!outputNode) continue;
+
+    // Deselect all nodes scoped to this componentId
+    outputNode.traverse((n) => {
+      for (const d of n.data) {
+        if (
+          d instanceof InteractionData &&
+          d.restrictedManagers.includes(componentId)
+        ) {
+          selectMgr.deselect(n);
+        }
+      }
+    });
+
+    // Re-select nodes that match the stored names
+    const outputName = session.outputs[outputId].name;
+    selectedNames.forEach((name) => {
+      const parts = name.split(".");
+      if (parts[0] !== outputName) return;
+      const matchName = parts.slice(1).join(".");
+
+      outputNode.traverse((n) => {
+        if (checkNodeNameMatch(n, matchName)) {
+          const hasData = n.data.some(
+            (d) =>
+              d instanceof InteractionData &&
+              d.restrictedManagers.includes(componentId),
+          );
+          if (hasData) {
+            selectMgr.select({ distance: 1, point: [0, 0, 0], node: n });
+          }
+        }
+      });
+    });
+  }
+}
+```
+
+CDN: `SDVInteractions.InteractionData`, `SDVInteractions.checkNodeNameMatch(...)`.
+
+Call `restoreSelection()` in two places:
+
+1. **After `await session.customize()`** in every selection event handler.
+2. **Inside `output.updateCallback`** after marking new nodes with `addInteractionData`,
+   so the highlight is restored when nodes are replaced by other parameter changes.
 
 ### Acceptance Logic — When to Call `customize()`
 
@@ -413,7 +553,8 @@ let selectedNames = [];
 const multiSelectOnToken = addListener(
   EVENTTYPE.INTERACTION.MULTI_SELECT_ON,
   (e) => {
-    selectedNames = e.nodes.map((n) => n.name);
+    if (e.manager.id !== componentId) return;
+    selectedNames = getSelectedNames(e.nodes);
     updateUI(selectedNames); // Update counter / enable confirm button
   },
 );
@@ -421,7 +562,8 @@ const multiSelectOnToken = addListener(
 const multiSelectOffToken = addListener(
   EVENTTYPE.INTERACTION.MULTI_SELECT_OFF,
   (e) => {
-    selectedNames = e.nodes.map((n) => n.name);
+    if (e.manager.id !== componentId) return;
+    selectedNames = getSelectedNames(e.nodes);
     updateUI(selectedNames);
   },
 );
@@ -450,7 +592,14 @@ parameters, you must fully tear down the previous selection state before setting
 a new one.
 
 ```ts
-function teardownSelection(listenerTokens, selectMgr, hoverMgr, selectMgrToken, hoverMgrToken, componentId) {
+function teardownSelection(
+  listenerTokens,
+  selectMgr,
+  hoverMgr,
+  selectMgrToken,
+  hoverMgrToken,
+  componentId,
+) {
   // 1. Remove event listeners
   for (const t of listenerTokens) removeListener(t);
 
@@ -464,7 +613,8 @@ function teardownSelection(listenerTokens, selectMgr, hoverMgr, selectMgrToken, 
   }
 
   // 3. Remove interaction managers from engine (pass the token, not the manager)
-  if (selectMgrToken) interactionEngine.removeInteractionManager(selectMgrToken);
+  if (selectMgrToken)
+    interactionEngine.removeInteractionManager(selectMgrToken);
   if (hoverMgrToken) interactionEngine.removeInteractionManager(hoverMgrToken);
 
   // 4. Remove InteractionData scoped to this componentId from the session root
@@ -563,11 +713,13 @@ async function activateSelectionParam(selParamId) {
   }
   if (settings?.deselectOnEmpty != null)
     activeSelectMgr.deselectOnEmpty = settings.deselectOnEmpty;
-  activeSelectMgrToken = interactionEngine.addInteractionManager(activeSelectMgr);
+  activeSelectMgrToken =
+    interactionEngine.addInteractionManager(activeSelectMgr);
 
   if (settings?.hover !== false) {
     activeHoverMgr = new HoverManager(componentId, hoverEffect);
-    activeHoverMgrToken = interactionEngine.addInteractionManager(activeHoverMgr);
+    activeHoverMgrToken =
+      interactionEngine.addInteractionManager(activeHoverMgr);
   }
 
   // Mark nodes — use addInteractionData with the same componentId
@@ -586,28 +738,55 @@ async function activateSelectionParam(selParamId) {
     );
   }
 
+  // Build output patterns for name resolution
+  const outputIdsToNames = {};
+  Object.entries(session.outputs).forEach(([id, out]) => {
+    outputIdsToNames[id] = out.name;
+  });
+  const nameFilter = settings?.nameFilter ?? [];
+  const outputPatterns = nameFilter.length
+    ? convertUserDefinedNameFilters(nameFilter, outputIdsToNames)
+    : null;
+
+  function getNames(nodes) {
+    if (!outputPatterns) return nodes.map((n) => n.name);
+    const names = [];
+    for (const outputId in outputPatterns) {
+      names.push(...matchNodesWithPatterns(outputPatterns[outputId], nodes));
+    }
+    return names;
+  }
+
   // Listen for events — store tokens for cleanup
   // Use the correct event types based on single vs multi-select
   if (selectMultiple) {
     activeListenerTokens = [
       addListener(EVENTTYPE.INTERACTION.MULTI_SELECT_ON, async (e) => {
-        const names = e.nodes.map((n) => n.name);
+        if (e.manager.id !== componentId) return;
+        const names = getNames(e.nodes);
         selParam.value = JSON.stringify({ names });
         await session.customize();
+        restoreSelection(session, componentId, activeSelectMgr, names);
       }),
       addListener(EVENTTYPE.INTERACTION.MULTI_SELECT_OFF, async (e) => {
-        const names = e.nodes.map((n) => n.name);
+        if (e.manager.id !== componentId) return;
+        const names = getNames(e.nodes);
         selParam.value = JSON.stringify({ names });
         await session.customize();
+        restoreSelection(session, componentId, activeSelectMgr, names);
       }),
     ];
   } else {
     activeListenerTokens = [
       addListener(EVENTTYPE.INTERACTION.SELECT_ON, async (e) => {
-        selParam.value = JSON.stringify({ names: [e.node.name] });
+        if (e.manager.id !== componentId) return;
+        const names = getNames([e.node]);
+        selParam.value = JSON.stringify({ names });
         await session.customize();
+        restoreSelection(session, componentId, activeSelectMgr, names);
       }),
       addListener(EVENTTYPE.INTERACTION.SELECT_OFF, async (e) => {
+        if (e.manager.id !== componentId) return;
         selParam.value = JSON.stringify({ names: [] });
         await session.customize();
       }),

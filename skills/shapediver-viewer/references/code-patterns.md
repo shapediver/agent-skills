@@ -762,26 +762,26 @@ Always show the **exact error message** — don't paraphrase or summarize.
 
 ### Common Errors & Fixes
 
-| Error / Symptom                                   | Cause                                 | Fix                                                                  |
-| :------------------------------------------------ | :------------------------------------ | :------------------------------------------------------------------- |
-| HTTP 403 on session creation                      | Domain not whitelisted                | Add domain in Embedding Settings on platform                         |
-| Model geometry never loads                        | `automaticSceneUpdate` set to `false` | Set `session.automaticSceneUpdate = true` (it defaults to `true`)    |
-| Parameter changes don't update scene              | `customize()` not called              | Call `await session.customize()` after `param.value`                 |
-| Parameter update silently fails                   | Incorrect value format                | Use `toSDValue()`; check with `param.isValid(value, true)`           |
+| Error / Symptom                                   | Cause                                 | Fix                                                                                        |
+| :------------------------------------------------ | :------------------------------------ | :----------------------------------------------------------------------------------------- |
+| HTTP 403 on session creation                      | Domain not whitelisted                | Add domain in Embedding Settings on platform                                               |
+| Model geometry never loads                        | `automaticSceneUpdate` set to `false` | Set `session.automaticSceneUpdate = true` (it defaults to `true`)                          |
+| Parameter changes don't update scene              | `customize()` not called              | Call `await session.customize()` after `param.value`                                       |
+| Parameter update silently fails                   | Incorrect value format                | Use `toSDValue()`; check with `param.isValid(value, true)`                                 |
 | Double viewport / WebGL context lost              | React 18 Strict Mode                  | Add `sessionRef.current` guard in `useEffect`; if still blank, remove `<React.StrictMode>` |
-| Blank canvas in Next.js / SSR                     | Module imported at top level          | Dynamic-import inside `useEffect`                                    |
-| `SDV is not defined`                              | Wrong CDN URL or load order           | Use correct URL; for React CDN use `await loadShapeDiverCDN()`       |
-| `SDV3 is not defined`                             | Wrong global name                     | The global is `SDV`, not `SDV3`                                      |
-| StringList shows wrong option                     | Using label instead of index          | Option `value` must be numeric index as string                       |
-| Color picker shows wrong color                    | Not converting `0xRRGGBBAA`           | Use `slice(2, 8)` — NOT `slice(-6)`.                                 |
-| Color picker doesn't update model                 | Using `onChange` or `onMouseUp`       | Use Mantine `ColorInput` with `onChangeEnd`, or native DOM `change`. |
-| Rate limit / 429                                  | `onChange` committing continuously    | Never `onChange` to commit. See commit table.                        |
-| Slider commits wrong value                        | Stale closure                         | Use `useRef`. See Pattern D.                                         |
-| Float slider imprecise                            | Not rounding to `decimalplaces`       | `parseFloat(raw.toFixed(dp))`                                        |
-| Export returns no content                         | Not requested                         | Call `export.request()` explicitly                                   |
-| `"Script error"` (no details)                     | Missing `crossorigin`                 | Add `crossorigin="anonymous"` to `<script>` tag                      |
-| Canvas ref not ready / blank viewport             | Canvas conditionally rendered         | Canvas must ALWAYS be in the DOM. Use an overlay for loading.        |
-| `"maximum amount of points (undefined) exceeded"` | `maxPoints` set to `undefined`        | Use conditional spread: `...(val != null && { maxPoints: val })`     |
+| Blank canvas in Next.js / SSR                     | Module imported at top level          | Dynamic-import inside `useEffect`                                                          |
+| `SDV is not defined`                              | Wrong CDN URL or load order           | Use correct URL; for React CDN use `await loadShapeDiverCDN()`                             |
+| `SDV3 is not defined`                             | Wrong global name                     | The global is `SDV`, not `SDV3`                                                            |
+| StringList shows wrong option                     | Using label instead of index          | Option `value` must be numeric index as string                                             |
+| Color picker shows wrong color                    | Not converting `0xRRGGBBAA`           | Use `slice(2, 8)` — NOT `slice(-6)`.                                                       |
+| Color picker doesn't update model                 | Using `onChange` or `onMouseUp`       | Use Mantine `ColorInput` with `onChangeEnd`, or native DOM `change`.                       |
+| Rate limit / 429                                  | `onChange` committing continuously    | Never `onChange` to commit. See commit table.                                              |
+| Slider commits wrong value                        | Stale closure                         | Use `useRef`. See Pattern D.                                                               |
+| Float slider imprecise                            | Not rounding to `decimalplaces`       | `parseFloat(raw.toFixed(dp))`                                                              |
+| Export returns no content                         | Not requested                         | Call `export.request()` explicitly                                                         |
+| `"Script error"` (no details)                     | Missing `crossorigin`                 | Add `crossorigin="anonymous"` to `<script>` tag                                            |
+| Canvas ref not ready / blank viewport             | Canvas conditionally rendered         | Canvas must ALWAYS be in the DOM. Use an overlay for loading.                              |
+| `"maximum amount of points (undefined) exceeded"` | `maxPoints` set to `undefined`        | Use conditional spread: `...(val != null && { maxPoints: val })`                           |
 
 ### Debugging Tips
 

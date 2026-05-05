@@ -76,6 +76,7 @@ custom traversal code.**
 | :------------------------------ | :----------------------------------------------------------------------------------- |
 | `convertUserDefinedNameFilters` | Converts `nameFilter` strings into `OutputNodeNameFilterPatterns` keyed by output ID |
 | `gatherNodesForPattern`         | Traverses the scene tree and collects nodes matching a pattern                       |
+| `matchNodesWithPatterns`        | Given output patterns and an array of nodes, returns matching dot-separated names    |
 | `addInteractionData`            | Adds `InteractionData` to a node with proper component scoping                       |
 | `getNodesByName`                | Finds scene tree nodes across sessions by their dot-separated names                  |
 | `checkNodeNameMatch`            | Checks if a single node matches a dot-separated name                                 |
