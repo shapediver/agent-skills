@@ -41,6 +41,40 @@ const interactionEngine = new InteractionEngine(viewport);
 CDN: `new SDVInteractions.InteractionEngine(viewport)`,
 `new SDVInteractions.MultiSelectManager(componentId, effect, min, max)`.
 
+## Simple vs Component-Scoped Constructor Styles
+
+The official ShapeDiver documentation (help.shapediver.com) shows a **simpler constructor**
+that omits the `componentId`:
+
+```ts
+// Simple style — from official docs / single-interaction scenarios
+const selectManager = new SelectManager();
+selectManager.effectMaterial = new MaterialStandardData({ color: "#ffff00" });
+const interactionData = new InteractionData({ select: true });
+node.data.push(interactionData);
+```
+
+This reference file primarily documents the **component-scoped style** with `componentId`,
+`addInteractionData()`, and effect constructor arguments:
+
+```ts
+// Component-scoped style — used in the App Builder / multi-interaction scenarios
+const selectManager = new SelectManager(componentId, selectionEffect);
+addInteractionData(node, { select: true }, componentId);
+```
+
+**When to use which:**
+- **Simple style**: Quick prototypes or models with a single selection interaction.
+  Use `new InteractionData(...)` directly and set `effectMaterial` on the manager.
+- **Component-scoped style**: Required when multiple interaction parameters coexist
+  (e.g., two selection inputs controlling different parts of the geometry). Each manager's
+  `componentId` must match the `componentId` passed to `addInteractionData()`.
+  This is how the App Builder isolates multiple interactions.
+
+Both styles use the same underlying `InteractionEngine`. They are not different APIs —
+the `componentId` parameter is optional in the constructor. If omitted, the manager
+responds to all `InteractionData` regardless of scope.
+
 ## Component ID — Scoping Managers to InteractionData
 
 Every `SelectManager` and `HoverManager` must be created with a **`componentId`**

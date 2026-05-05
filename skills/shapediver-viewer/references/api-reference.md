@@ -35,6 +35,30 @@ const session = await SDV.createSession({
 - **`session.customizeResult(parameterValues)`**: Returns raw backend response only.
 - **`session.cancelCustomization()`**: Cancels in-progress customization.
 
+#### Customize Shorthand
+
+You can pass parameter values directly to `customize()` instead of setting `param.value`
+first. Both approaches are valid — the shorthand is simpler when updating known values:
+
+```ts
+// Shorthand — pass values directly (by name or ID)
+await session.customize({
+  "Length": 1500,
+  "Material Color": "#ff0000"
+});
+
+// Equivalent step-by-step approach
+session.getParameterByName("Length")[0].value = 1500;
+session.getParameterByName("Material Color")[0].value = "#ff0000";
+await session.customize();
+```
+
+**When to use which:**
+- **Shorthand**: Simple value updates where you know parameter names/IDs and don't need
+  type conversion or validation.
+- **Step-by-step**: When using `toSDValue()` for type-safe conversion, when building
+  dynamic UIs from `session.parameters`, or when you need `param.isValid()` checks.
+
 ### Parameter & Output Access
 
 Parameters, outputs, and exports can all be looked up by **name** or **ID** — use
@@ -63,11 +87,41 @@ whichever the user provides.
 
 ### Model States
 
+Model states allow saving and restoring parameter configurations with optional
+screenshots, custom data, and AR scenes. Each state gets a unique ID for later retrieval
+or sharing (e.g., via URL parameter).
+
 - **`session.createModelState(parameterValues?, omitSessionParameterValues?, image?, data?, arScene?)`**: creates a saved state. Returns `Promise<string>` (state id).
 - **`session.getModelState(modelStateId?)`**: retrieves a model state.
 - **`session.customizeWithModelState(modelState)`**: applies a saved state's parameter values.
 - Model states have a **6-month lifetime**. Can be applied across models (matched by id/name).
 - Use `modelStateId` in `createSession` options to apply a state at init time.
+
+```ts
+// Save current state with a screenshot
+const stateId = await session.createModelState(
+  {},                                    // use current parameter values
+  false,                                 // include session values
+  () => viewport.getScreenshot(),        // screenshot function
+  { label: "User Config #1" },          // custom data (any object)
+  async () => await viewport.convertToGlTF() // optional AR scene
+);
+// stateId can be stored in a database or passed via URL
+
+// Load a saved state at session creation time (avoids a round-trip)
+const session = await SDV.createSession({
+  id: "session",
+  ticket,
+  modelViewUrl,
+  modelStateId: "SAVED_STATE_ID",
+});
+
+// Apply a saved state to an existing session
+await session.customizeWithModelState("SAVED_STATE_ID");
+// Or pass the full model state object:
+const state = await session.getModelState("SAVED_STATE_ID");
+await session.customizeWithModelState(state);
+```
 
 ### File Uploads & glTF
 
@@ -78,7 +132,35 @@ whichever the user provides.
 
 ### JWT & Settings
 
-- **`session.jwtToken`** / **`session.setJwtToken(token)`** / **`session.refreshJwtToken`**: JWT management.
+JWT (JSON Web Token) authorization adds an extra security layer for production models.
+When enabled on the platform, all API requests require a valid JWT.
+
+- **`session.jwtToken`**: current JWT token (read-only).
+- **`session.setJwtToken(token)`**: set a new JWT token.
+- **`session.refreshJwtToken`**: callback `() => Promise<string>` — called automatically
+  when the current token expires. Set this to a function that fetches a fresh token
+  from your backend.
+
+```ts
+// Set initial JWT at session creation
+const session = await SDV.createSession({
+  id: "session",
+  ticket,
+  modelViewUrl,
+  jwtToken: "INITIAL_JWT_TOKEN",
+});
+
+// Auto-refresh when token expires
+session.refreshJwtToken = async () => {
+  const response = await fetch("/api/shapediver/token");
+  const { token } = await response.json();
+  return token;
+};
+```
+
+See [API Authorization docs](https://help.shapediver.com/doc/api-authorization) for
+backend token generation and the full security flow.
+
 - **`session.saveSettings(viewportId?)`** / **`session.resetSettings(sections?)`** / **`session.applySettings(response, sections?)`**: viewport settings persistence.
 - **`session.saveDefaultParameterValues()`**: saves current values as defaults.
 - **`session.saveUiProperties()`**: saves displayname, order, hidden, tooltip.
@@ -118,10 +200,53 @@ viewport.close(); // destroys WebGL context
 - **`viewport.camera`**: current `ICameraApi`.
 - **`viewport.cameras`**: dictionary of all cameras.
 - **`viewport.createPerspectiveCamera(id?)`** / **`viewport.createOrthographicCamera(id?)`**.
+- **`viewport.createOrthographicCamera(id?)`**: create an orthographic camera. Set `camera.direction` to `ORTHOGRAPHIC_CAMERA_DIRECTION.TOP`, `.FRONT`, `.LEFT`, etc.
 - **`viewport.assignCamera(id)`** / **`viewport.removeCamera(id)`**.
-- **`camera.animate(keyframes, options?)`**: animate through `{ position, target }` keyframes.
+- **`camera.animate(keyframes, options?)`**: animate through `{ position, target }` keyframes. `options`: `{ duration: ms }`.
 - **`camera.zoomTo(nodes?)`**: zoom to fit nodes or entire scene.
 - **`camera.reset(duration?)`**: reset to default position/target.
+- **`camera.defaultPosition`** / **`camera.defaultTarget`**: default camera values (read-only).
+- **`camera.position`** / **`camera.target`**: current camera position/target (read/write).
+
+#### Camera Restrictions
+
+Restrict how end users can navigate the 3D scene. Common for configurators that
+need a controlled viewing experience.
+
+| Property                  | Type              | Description                                                    |
+| :------------------------ | :---------------- | :------------------------------------------------------------- |
+| `camera.enableZoom`       | `boolean`         | Enable/disable scroll-to-zoom (default: `true`)               |
+| `camera.enableRotation`   | `boolean`         | Enable/disable orbit rotation (default: `true`)                |
+| `camera.enablePan`        | `boolean`         | Enable/disable panning (default: `true`)                       |
+| `camera.enableAutoRotation` | `boolean`       | Auto-rotate the camera around the target (default: `false`)    |
+| `camera.autoRotationSpeed`  | `number`        | Rotation speed when auto-rotation is enabled                   |
+| `camera.zoomRestriction`  | `{ minDistance?, maxDistance? }` | Min/max zoom distances                      |
+| `camera.rotationRestriction` | `{ minPolarAngle?, maxPolarAngle?, minAzimuthAngle?, maxAzimuthAngle? }` | Orbit angle limits (radians) |
+
+```ts
+// Lock zoom range and vertical rotation
+const camera = viewport.camera;
+camera.enablePan = false;
+camera.zoomRestriction = { minDistance: 50, maxDistance: 300 };
+camera.rotationRestriction = {
+  minPolarAngle: Math.PI / 6,
+  maxPolarAngle: Math.PI / 2,
+};
+```
+
+```ts
+// Auto-rotate (turntable) for showcase / hero shots
+camera.enableAutoRotation = true;
+camera.autoRotationSpeed = 1.0;
+```
+
+```ts
+// Switch between perspective and orthographic cameras
+const orthoTop = viewport.createOrthographicCamera();
+orthoTop.direction = SDV.ORTHOGRAPHIC_CAMERA_DIRECTION.TOP;
+viewport.assignCamera(orthoTop.id);  // switch to top view
+viewport.assignCamera(viewport.cameras["default"].id);  // switch back
+```
 
 ### Environment & Appearance
 
@@ -130,6 +255,42 @@ viewport.close(); // destroys WebGL context
 - **`viewport.clearColor`** / **`viewport.clearAlpha`**: background color/alpha.
 - **`viewport.gridVisibility`** / **`viewport.gridColor`**: grid display.
 - **`viewport.groundPlaneVisibility`** / **`viewport.groundPlaneColor`** / **`viewport.groundPlaneShadowVisibility`**.
+
+### Branding, Spinner & Visibility
+
+- **`viewport.logo`**: set to `null` to remove the ShapeDiver logo, or set to a custom image URL.
+- **`viewport.logoBackgroundColor`** / **`viewport.logoBackgroundOpacity`**: customize logo background.
+- **`viewport.busyModeDisplay`**: controls the loading spinner appearance.
+- **`viewport.show`** / **`viewport.hide`**: programmatically show/hide the viewport canvas overlay.
+
+```ts
+// Remove default logo
+viewport.logo = null;
+
+// Custom logo
+viewport.logo = "https://example.com/my-logo.png";
+
+// Transparent background
+viewport.clearColor = "#ffffff";
+viewport.clearAlpha = 0;
+
+// Hide grid and ground plane
+viewport.gridVisibility = false;
+viewport.groundPlaneVisibility = false;
+```
+
+### Color Management
+
+Colors in the viewer use linear color space internally. The `automaticColorAdjustment`
+setting (default: enabled since v2.7.0) automatically converts hex/string colors from
+sRGB to linear. When providing colors as numbers, they are assumed to already be linear.
+
+- **`viewport.automaticColorAdjustment`**: `boolean` — auto-convert sRGB string colors to linear.
+- **`viewport.textureEncoding`**: color space for `map` and `emissiveMap` textures.
+- **`viewport.outputEncoding`**: color space for the final rendered output.
+
+If colors from `<input type="color">` look different in the viewer, `automaticColorAdjustment`
+handles this automatically. Only disable if you are providing pre-linearized colors.
 
 ### Lighting
 
@@ -650,3 +811,145 @@ Open via an HTTP server, not `file://`:
 - `npx serve` or `python3 -m http.server 8080`
 
 The `file://` protocol causes cosmetic browser warnings but doesn't affect API calls.
+
+---
+
+## Initial Parameters on Session Creation
+
+Set parameter values in the `createSession` call to send them with the initial request,
+avoiding a second round-trip. Useful when you know the starting configuration from a URL
+parameter, saved state, or user preference.
+
+```ts
+const session = await SDV.createSession({
+  id: "session",
+  ticket,
+  modelViewUrl,
+  initialParameterValues: {
+    "Length": 1500,
+    "Material Color": "#00ff00",
+  },
+});
+```
+
+This sends the specified parameter values with the very first computation request. Without
+this, the session loads with model defaults, and you'd need a second `customize()` call.
+
+---
+
+## Multiple Sessions & Multiple Viewports
+
+### Multiple Sessions in One Viewport
+
+Load two or more models into the same 3D scene. Each session manages its own parameters,
+outputs, and exports independently. All sessions share the same viewport and camera.
+
+```ts
+const viewport = await SDV.createViewport({
+  id: "vp",
+  canvas: document.getElementById("canvas"),
+});
+
+const sessionA = await SDV.createSession({
+  id: "model-A",
+  ticket: TICKET_A,
+  modelViewUrl: MODEL_VIEW_URL_A,
+});
+
+const sessionB = await SDV.createSession({
+  id: "model-B",
+  ticket: TICKET_B,
+  modelViewUrl: MODEL_VIEW_URL_B,
+});
+
+// Each session has independent parameters
+sessionA.getParameterByName("Length")[0].value = 10;
+await sessionA.customize();
+
+// Clean up both sessions
+sessionA.close();
+sessionB.close();
+viewport.close();
+```
+
+### Multiple Viewports
+
+Show the same model from different angles or with different rendering settings.
+Each viewport needs its own canvas element and can have independent cameras,
+post-processing, and environment settings.
+
+```ts
+const viewportFront = await SDV.createViewport({
+  id: "front-view",
+  canvas: document.getElementById("canvas-front"),
+});
+
+const viewportTop = await SDV.createViewport({
+  id: "top-view",
+  canvas: document.getElementById("canvas-top"),
+});
+
+// Set top viewport to orthographic top-down camera
+const topCamera = viewportTop.createOrthographicCamera();
+topCamera.direction = SDV.ORTHOGRAPHIC_CAMERA_DIRECTION.TOP;
+viewportTop.assignCamera(topCamera.id);
+
+const session = await SDV.createSession({
+  id: "session",
+  ticket,
+  modelViewUrl,
+});
+// Session geometry appears in all viewports automatically
+```
+
+---
+
+## Progress Events
+
+Track loading and customization progress for loading indicators and progress bars.
+
+```ts
+import { addListener, EVENTTYPE } from "@shapediver/viewer";
+
+// Fires during initial model loading and customizations
+addListener(EVENTTYPE.SESSION.SESSION_INITIAL_OUTPUTS_LOADED, (e) => {
+  console.log("Initial outputs loaded");
+  hideLoadingSpinner();
+});
+
+// Track when the viewport is busy (processing scene updates)
+addListener(EVENTTYPE.VIEWPORT.BUSY_MODE_ON, () => {
+  showBusyIndicator();
+});
+
+addListener(EVENTTYPE.VIEWPORT.BUSY_MODE_OFF, () => {
+  hideBusyIndicator();
+});
+
+// Track customization lifecycle
+addListener(EVENTTYPE.SESSION.SESSION_CUSTOMIZED, (e) => {
+  console.log("Customization complete");
+});
+```
+
+CDN: `SDV.addListener(SDV.EVENTTYPE.SESSION.SESSION_CUSTOMIZED, ...)`.
+
+---
+
+## Performance Tips
+
+- **Batch parameter changes:** Set multiple `param.value` before calling `customize()` once.
+  Each `customize()` is a server round-trip.
+- **Debounce rapid changes:** For text inputs, commit on `onBlur` rather than every keystroke.
+- **Use `cancelCustomization()`:** When the user changes a parameter while a previous
+  customization is still in-flight, cancel the old one to avoid processing stale results.
+- **`customizeParallel()` for preview:** Runs a computation without replacing the current
+  scene. Useful for "what-if" previews or pre-caching.
+- **`initialParameterValues`:** Set known starting values at session creation to skip the
+  default-then-update round-trip.
+- **Use `output.freeze = true`:** After material overrides, freeze the output to prevent
+  server updates from resetting your local changes.
+- **Pause rendering:** Use `viewport.pauseRendering()` during bulk scene tree operations,
+  then `viewport.continueRendering()`.
+- **Fixed CDN version:** Use a pinned version (e.g., `v3/2.20.0/bundle.js`) instead of
+  `latest` in production to avoid unexpected changes.

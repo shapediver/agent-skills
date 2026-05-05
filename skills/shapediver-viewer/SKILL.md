@@ -130,7 +130,7 @@ user provides. Never create input fields for end users to enter these values.
 Use type guards (`isDrawingParameterApi`, `isSelectionParameterApi`, etc.) before accessing
 `param.settings`. Do not assume a type from the user's description.
 
-**⚠️ Interaction `param.settings` is nested at runtime:** The structure is
+**Warning — Interaction `param.settings` is nested at runtime:** The structure is
 `{ type: "selection", props: { nameFilter, maximumSelection, ... } }`. The actual
 properties are under `settings.props`, NOT directly on `settings`. Always extract:
 `const settings = param.settings?.props ?? param.settings;`
@@ -239,7 +239,7 @@ session.automaticSceneUpdate = true;
   Use type guards to determine the sub-type: `isSelectionParameterApi(param)`,
   `isDraggingParameterApi(param)`, `isGumballTransformParameterApi(param)`,
   `isRectangleTransformParameterApi(param)`, `isDrawingParameterApi(param)`.
-  **⚠️ For interaction parameters, `settings` is nested at runtime:**
+  **Warning — For interaction parameters, `settings` is nested at runtime:**
   `{ type: "selection", props: { nameFilter, maximumSelection, ... } }`.
   Always extract: `const settings = param.settings?.props ?? param.settings;`
 - **`param.group`** — model-author grouping from Grasshopper. Use this to organize UI
@@ -250,9 +250,26 @@ session.automaticSceneUpdate = true;
 
 For detailed API surfaces (Session, Viewport, Parameter, Output, Export, Scene Tree, Events,
 Materials, Animations, Three.js), see [references/api-reference.md](references/api-reference.md).
+Key sections include:
+- **Camera restrictions** (zoom/rotation/pan limits, auto-rotate, orthographic)
+- **Branding & spinner** (logo, background, grid, busy indicator)
+- **Color management** (automaticColorAdjustment, encoding)
+- **Model states** (create, load, apply)
+- **JWT authorization** (refreshJwtToken callback)
+- **Initial parameters** (initialParameterValues on session creation)
+- **Multiple sessions & viewports**
+- **Progress events** (TASK_START, TASK_PROCESS, TASK_END)
+- **Performance tips**
 
-For ready-to-use code patterns (Patterns A–K), parameter value formatting, `toSDValue()`,
+For ready-to-use code patterns (Patterns A–M), parameter value formatting, `toSDValue()`,
 React architecture, and troubleshooting, see [references/code-patterns.md](references/code-patterns.md).
+Key patterns include:
+- **Pattern M** — File upload parameters
+- **Pattern L** — Live material color override (client-side, no server call)
+- **Customize shorthand** — `session.customize({ "Name": value })`
+
+For advanced troubleshooting beyond the quick-reference table, see
+[references/troubleshooting.md](references/troubleshooting.md).
 
 ---
 

@@ -33,8 +33,8 @@ session management, parameter routing, model state handling, and responsive layo
 - Parameter commit patterns use `onChange` for display + `onChangeEnd` for commit
   (Mantine's convention). This fires one commit at the END of interaction, not continuously.
 
-  ❌ `<Slider onChange={(v) => commitParam(p.id, v)} />` — commits on every drag movement
-  ✅ `<Slider onChange={(v) => setLocal(v)} onChangeEnd={(v) => commitParam(p.id, v)} />` — commits once at end
+  Wrong: `<Slider onChange={(v) => commitParam(p.id, v)} />` — commits on every drag movement
+  Correct: `<Slider onChange={(v) => setLocal(v)} onChangeEnd={(v) => commitParam(p.id, v)} />` — commits once at end
 
 - The `AppBuilderShared` repo contains reusable hooks for session management, parameter
   handling, and UI components — review the `shared` directory before building custom

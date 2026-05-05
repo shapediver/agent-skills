@@ -63,6 +63,7 @@ for the expected format** before generating code.
 ### File
 
 Pass `File`, `Blob`, or URL string. Uploaded automatically on `customize()`.
+For file parameters, use `param.format` to check accepted MIME types (e.g., `["image/png", "image/jpeg"]`).
 
 ### Complete `toSDValue()` Reference
 
@@ -103,6 +104,21 @@ async function commitParam(session, paramId, rawValue) {
   await session.customize();
 }
 ```
+
+### Customize Shorthand Alternative
+
+For simple cases, you can pass values directly to `customize()` instead of using
+`param.value` + `session.customize()`. This is the approach shown in the official
+ShapeDiver help desk docs:
+
+```ts
+// Shorthand — pass values directly (parameter name or ID as key)
+await session.customize({ "Length": 1500, "Material Color": "#ff0000" });
+```
+
+Use the step-by-step `commitParam()` pattern when building dynamic UIs from
+`session.parameters` where you need `toSDValue()` type conversion. Use the shorthand
+when you know exact parameter names and values.
 
 ### Correct Commit Events
 
@@ -752,6 +768,217 @@ export default function ShapeDiverCDNConfigurator({ ticket, modelViewUrl }) {
     </div>
   );
 }
+```
+
+## Pattern L: Live Material Color Override (client-side, no server call)
+
+Use `MaterialStandardData` to override output materials instantly on the client, bypassing
+`session.customize()`. This is the correct pattern for "live preview without committing"
+color pickers. See https://help.shapediver.com/doc/materials for background.
+
+**Key facts:**
+- `SDV.MaterialStandardData` / `MaterialStandardData` — the material class.
+- `SDV.GeometryData` / `GeometryData` — present in node data alongside or inside geometry.
+- **⚠️ Do NOT replace material objects with a fresh `new MaterialStandardData()`** — this
+  discards all texture maps (`map`, `roughnessMap`, etc.) on the original material.
+  Instead, **mutate the `color` property on the existing material objects in-place**.
+- Two model types: **glTF 2.0 Display** (material embedded in geometry output) and
+  **ShapeDiver Display** (separate material output). Mutating in-place works for both.
+- `output.updateCallback = (newNode) => { ... }` — called every time the server sends new
+  output data (after `session.customize()`). Register it to re-apply the color so it
+  survives server updates.
+- `node.updateVersion()` + `SDV.sceneTree.root.updateVersion()` + `viewport.update()` —
+  force a re-render. **Also call `data.updateVersion()` on each `GeometryData` and
+  `material.updateVersion()` on the material** at the leaf level, otherwise the renderer
+  doesn't pick up the change (geometry may be 6 levels deep in the scene tree).
+- **Do NOT apply the override on init** (set `liveColorHex = null` at startup).
+  Only activate it after the user explicitly picks a color.
+- When the user picks a Color List preset (server-side), set `liveColorHex = null`
+  so the server's preset colour is not masked by the client override.
+
+### CDN (plain HTML) — live color picker with staged server commit
+
+```js
+let liveColorHex = null;  // null = no override; set on first picker input
+const COLOR_OUTPUT_NAMES = ["Shelf", "Doors"]; // outputs to apply color to
+
+// ── After session loads ──────────────────────────────────────────────────────
+
+/**
+ * Mutate `color` on every existing MaterialStandardData in a node tree.
+ * Also calls updateVersion() on each GeometryData and its material so the
+ * renderer picks up the change (geometry may be deeply nested).
+ * Does NOT replace the material object — all maps and properties are preserved.
+ */
+function setColorOnMaterialsInNode(node, hex) {
+  for (let i = 0; i < node.data.length; i++) {
+    const d = node.data[i];
+    if (d instanceof SDV.MaterialStandardData) {
+      d.color = hex;
+      if (typeof d.updateVersion === 'function') d.updateVersion();
+    } else if (
+      d instanceof SDV.GeometryData &&
+      d.material instanceof SDV.MaterialStandardData
+    ) {
+      d.material.color = hex;
+      if (typeof d.material.updateVersion === 'function') d.material.updateVersion();
+      if (typeof d.updateVersion === 'function') d.updateVersion();
+    }
+  }
+  for (const child of node.children) setColorOnMaterialsInNode(child, hex);
+}
+
+function applyLiveColorToOutputs() {
+  if (!session || !viewport || !liveColorHex) return;
+  for (const name of COLOR_OUTPUT_NAMES) {
+    for (const output of session.getOutputByName(name)) {
+      if (output.node) {
+        setColorOnMaterialsInNode(output.node, liveColorHex);
+        output.node.updateVersion();
+      }
+    }
+  }
+  viewport.update();
+}
+
+// Register callbacks so the override survives server-triggered output updates
+function registerMaterialUpdateCallbacks() {
+  for (const name of COLOR_OUTPUT_NAMES) {
+    for (const output of session.getOutputByName(name)) {
+      output.updateCallback = (newNode) => {
+        if (newNode && liveColorHex) {
+          setColorOnMaterialsInNode(newNode, liveColorHex);
+          newNode.updateVersion();
+          viewport.update();
+        }
+      };
+    }
+  }
+}
+registerMaterialUpdateCallbacks(); // call once right after session loads
+
+// ── Color picker "input" event — runs on every mouse move ────────────────────
+colorPickerEl.addEventListener("input", (e) => {
+  liveColorHex = e.target.value;
+  applyLiveColorToOutputs();           // instant client-side update, no server call
+  staged[PARAM_MATERIAL_COLOR] = e.target.value; // stage for later server commit
+});
+
+// ── Color preset dropdown — clear live override so server preset shows through
+presetSelectEl.addEventListener("change", (e) => {
+  staged[PARAM_COLOR_LIST] = e.target.value;
+  liveColorHex = null;
+});
+
+// ── "Apply" button — commit staged values to server ──────────────────────────
+async function commitStagedToServer() {
+  for (const [id, val] of Object.entries(staged)) {
+    const p = session.parameters[id];
+    if (p) p.value = val;
+  }
+  Object.keys(staged).forEach((k) => delete staged[k]);
+  await session.customize();
+  // updateCallback will re-apply the color to the fresh output nodes
+}
+```
+
+### NPM / React — same pattern, refs instead of module-level vars
+
+```tsx
+const liveMaterialRef = useRef(null);
+const colorOverrideActiveRef = useRef(false);
+
+// In useEffect after session loads:
+liveMaterialRef.current = new MaterialStandardData();
+registerMaterialUpdateCallbacks(session, viewport, liveMaterialRef, colorOverrideActiveRef);
+
+// In color picker handler:
+function handleColorInput(hex) {
+  liveMaterialRef.current.color = hex;
+  colorOverrideActiveRef.current = true;
+  applyLiveColorToOutputs(session, viewport, liveMaterialRef.current);
+  setStagedColor(hex);
+}
+
+// On Apply:
+async function commitColor() {
+  const p = session.parameters[PARAM_MATERIAL_COLOR];
+  p.value = stagedColor;
+  await session.customize();
+}
+```
+
+## Pattern M: File Upload Parameter
+
+Upload files (images, 3D models, PDFs, etc.) via file parameters. The file is sent
+to the backend as part of `customize()`. Use `param.format` to check accepted MIME types.
+
+### React
+
+```tsx
+function FileUpload({ param, session }) {
+  const [uploading, setUploading] = useState(false);
+
+  async function handleFileChange(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    try {
+      param.value = file; // File, Blob, or URL string
+      await session.customize();
+    } catch (err) {
+      console.error("File upload error:", getSDErrorMessage(err));
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  // Build accept string from param.format (e.g., ["image/png", "image/jpeg"])
+  const accept = (param.format || []).join(",");
+
+  return (
+    <label>
+      {param.displayname || param.name}:
+      <input
+        type="file"
+        accept={accept || undefined}
+        onChange={handleFileChange}
+        disabled={uploading}
+      />
+      {uploading && <span> Uploading...</span>}
+    </label>
+  );
+}
+```
+
+### CDN / Plain HTML
+
+```js
+const fileInput = document.createElement("input");
+fileInput.type = "file";
+// Restrict to accepted types from param.format
+fileInput.accept = (param.format || []).join(",");
+fileInput.addEventListener("change", async (e) => {
+  const file = e.target.files?.[0];
+  if (!file) return;
+  param.value = file;
+  await session.customize();
+});
+```
+
+### Screenshot as File Upload
+
+Take a viewport screenshot and send it as a file parameter input:
+
+```ts
+const dataUrl = viewport.getScreenshot("image/png", 1);
+const response = await fetch(dataUrl);
+const blob = await response.blob();
+const file = new File([blob], "screenshot.png", { type: "image/png" });
+
+const fileParam = session.getParameterByName("Image")[0];
+fileParam.value = file;
+await session.customize();
 ```
 
 ---
