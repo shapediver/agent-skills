@@ -62,7 +62,16 @@ matches the node against each object's `nameFilter` to determine which restricti
 ```ts
 import { GumballTransform } from "@shapediver/viewer.features.transformation-tools";
 import {
+  InteractionEngine,
+  InteractionData,
+  SelectManager,
+  MultiSelectManager,
+  HoverManager,
+  addInteractionData,
+} from "@shapediver/viewer.features.interaction";
+import {
   addListener,
+  EVENTTYPE,
   EVENTTYPE_TRANSFORMATION_TOOLS,
   isGumballTransformParameterApi,
   POST_PROCESSING_EFFECT_TYPE,
@@ -71,13 +80,20 @@ import {
 } from "@shapediver/viewer";
 ```
 
-CDN: `SDVTransformationTools.GumballTransform`.
+CDN: `SDVTransformationTools.GumballTransform`,
+`SDVInteractions.MultiSelectManager`.
 
 ## Create GumballTransform
 
-The gumball typically works with selection: the user selects nodes first, then the
-gumball gizmo is attached to the selected node(s). Set up a SelectManager using the
-gumball parameter's selection-related settings.
+The gumball works with selection: the user selects nodes first, then the gumball gizmo
+is attached to the selected node(s). **The App Builder's gumball internally uses the
+same `useSelection` hook** as regular selection parameters — it creates selection
+settings from the gumball's props and delegates to the selection infrastructure.
+
+**Gumball defaults:** `minimumSelection: 0`, `maximumSelection: Infinity`. Because
+`maximumSelection > 1`, the App Builder **always uses `MultiSelectManager`** for gumball
+transforms. This means gumball selection fires `MULTI_SELECT_ON`/`MULTI_SELECT_OFF`
+events (with `e.nodes` array), not `SELECT_ON`/`SELECT_OFF`.
 
 **All managers and `addInteractionData` calls must use the same `componentId`.**
 Use the parameter ID. See [interactions-selection.md](interactions-selection.md) § Component ID.
@@ -122,12 +138,23 @@ const hoverEffect = {
   },
 };
 
-const selectManager = new SelectManager(componentId, selectionEffect);
-if (settings?.maximumSelection != null) {
-  selectManager.maximumSelection = settings.maximumSelection;
-}
-if (settings?.minimumSelection != null) {
-  selectManager.minimumSelection = settings.minimumSelection;
+const minimumSelection = settings?.minimumSelection ?? 0;
+const maximumSelection = settings?.maximumSelection ?? Infinity;
+
+// Gumball always uses MultiSelectManager (maximumSelection defaults to Infinity)
+const selectMultiple =
+  minimumSelection <= maximumSelection && maximumSelection > 1;
+
+let selectManager;
+if (selectMultiple) {
+  selectManager = new MultiSelectManager(
+    componentId,
+    selectionEffect,
+    minimumSelection,
+    maximumSelection,
+  );
+} else {
+  selectManager = new SelectManager(componentId, selectionEffect);
 }
 if (settings?.deselectOnEmpty != null) {
   selectManager.deselectOnEmpty = settings.deselectOnEmpty;
@@ -144,7 +171,13 @@ if (settings?.hover !== false) {
 // (use mergedNameFilter with convertUserDefinedNameFilters + gatherNodesForPattern
 //  or mark session.node if no filter)
 addInteractionData(session.node, { select: true, hover: true }, componentId);
+
+// Auto-select if only one node is available (App Builder behavior)
+// When only a single node matches the name filter, select it automatically.
 ```
+
+See [interactions-selection.md](interactions-selection.md) § Creating the Managers for the
+full `MultiSelectManager` vs `SelectManager` decision logic.
 
 ### Per-Object Restriction Matching
 
@@ -241,9 +274,14 @@ addListener(EVENTTYPE_TRANSFORMATION_TOOLS.MATRIX_CHANGED, async (e) => {
   Then extract props: `const settings = param.settings?.props ?? param.settings;`
   **Reading `param.settings.nameFilter` directly returns `undefined`** at runtime because
   settings are nested under `props`.
-- **Always pass `componentId`** to `SelectManager`, `HoverManager`, `addInteractionData`,
-  and `GumballTransform` (4th constructor arg). Without matching values, interaction
-  will not work.
+- **Always pass `componentId`** to `SelectManager`/`MultiSelectManager`, `HoverManager`,
+  `addInteractionData`, and `GumballTransform` (4th constructor arg). Without matching
+  values, interaction will not work.
+- **Use `MultiSelectManager` for gumball selection.** The gumball defaults to
+  `maximumSelection: Infinity`, which means `maximumSelection > 1` → always use
+  `MultiSelectManager`. Listen for `MULTI_SELECT_ON`/`MULTI_SELECT_OFF` events (with
+  `e.nodes` array), not `SELECT_ON`/`SELECT_OFF`. See
+  [interactions-selection.md](interactions-selection.md) § Creating the Managers.
 - The `nodes` array determines which objects get the gizmo. Use `getNodesByName` from
   `@shapediver/viewer.features.interaction` to find nodes matching the `nameFilter`
   patterns — see [name-filters.md](name-filters.md).

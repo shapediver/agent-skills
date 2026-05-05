@@ -60,6 +60,16 @@ object's `nameFilter` to determine which restrictions apply.
 ```ts
 import { RectangleTransform } from "@shapediver/viewer.features.transformation-tools";
 import {
+  InteractionEngine,
+  InteractionData,
+  SelectManager,
+  MultiSelectManager,
+  HoverManager,
+  addInteractionData,
+} from "@shapediver/viewer.features.interaction";
+import {
+  addListener,
+  EVENTTYPE,
   isRectangleTransformParameterApi,
   POST_PROCESSING_EFFECT_TYPE,
   BlendFunction,
@@ -67,12 +77,18 @@ import {
 } from "@shapediver/viewer";
 ```
 
-CDN: `SDVTransformationTools.RectangleTransform`.
+CDN: `SDVTransformationTools.RectangleTransform`,
+`SDVInteractions.MultiSelectManager`.
 
 ## Create RectangleTransform
 
-Like the gumball, the rectangle transform typically works with selection. Set up a
-SelectManager using the parameter's selection-related settings.
+Like the gumball, the rectangle transform internally uses the same selection
+infrastructure. **The App Builder's rectangle transform calls `useSelection` internally**
+with selection settings derived from the rectangle transform parameter's props.
+
+**Rectangle defaults:** `minimumSelection: 0`, `maximumSelection: 1`. With
+`maximumSelection` = 1, the App Builder uses a regular `SelectManager` (single select).
+If `maximumSelection > 1`, it uses `MultiSelectManager` instead.
 
 **All managers and `addInteractionData` calls must use the same `componentId`.**
 Use the parameter ID. See [interactions-selection.md](interactions-selection.md) § Component ID.
@@ -117,12 +133,24 @@ const hoverEffect = {
   },
 };
 
-const selectManager = new SelectManager(componentId, selectionEffect);
-if (settings?.maximumSelection != null) {
-  selectManager.maximumSelection = settings.maximumSelection;
-}
-if (settings?.minimumSelection != null) {
-  selectManager.minimumSelection = settings.minimumSelection;
+const minimumSelection = settings?.minimumSelection ?? 0;
+const maximumSelection = settings?.maximumSelection ?? 1;
+
+// Determine whether to use multi-select
+// Default maximumSelection is 1 → single select. If overridden > 1 → multi-select.
+const selectMultiple =
+  minimumSelection <= maximumSelection && maximumSelection > 1;
+
+let selectManager;
+if (selectMultiple) {
+  selectManager = new MultiSelectManager(
+    componentId,
+    selectionEffect,
+    minimumSelection,
+    maximumSelection,
+  );
+} else {
+  selectManager = new SelectManager(componentId, selectionEffect);
 }
 if (settings?.deselectOnEmpty != null) {
   selectManager.deselectOnEmpty = settings.deselectOnEmpty;
@@ -137,7 +165,35 @@ if (settings?.hover !== false) {
 
 // Mark nodes using addInteractionData with componentId
 addInteractionData(session.node, { select: true, hover: true }, componentId);
+
+// Auto-select if only one node is available (App Builder behavior)
+// When only a single node matches the name filter, select it automatically.
 ```
+
+See [interactions-selection.md](interactions-selection.md) § Creating the Managers for the
+full `MultiSelectManager` vs `SelectManager` decision logic.
+
+### Deactivating Selection When Maximum Is Reached
+
+The App Builder deactivates selection once `maximumSelection` is reached. This prevents
+the user from clicking additional nodes when the limit has been hit:
+
+```ts
+// Track whether max selections reached
+let maxReached = false;
+
+function onSelectionChanged(selectedNames) {
+  if (maximumSelection !== Infinity) {
+    maxReached = selectedNames.length >= maximumSelection;
+  }
+  // When maxReached is true, disable further selection interaction
+  // (e.g., remove interaction managers or skip addInteractionData)
+}
+```
+
+This is especially relevant for rectangle transforms where the default `maximumSelection`
+is 1 — after the user selects a single object, selection is deactivated and the
+rectangle transform gizmo takes over.
 
 ### Plane Conversion
 
@@ -246,9 +302,14 @@ CDN: `SDVInteractions.getNodesByName(...)`, `SDVInteractions.matchNodesWithPatte
   Then extract props: `const settings = param.settings?.props ?? param.settings;`
   **Reading `param.settings.nameFilter` directly returns `undefined`** at runtime because
   settings are nested under `props`.
-- **Always pass `componentId`** to `SelectManager`, `HoverManager`, `addInteractionData`,
-  and `RectangleTransform` (4th constructor arg). Without matching values, interaction
-  will not work.
+- **Always pass `componentId`** to `SelectManager`/`MultiSelectManager`, `HoverManager`,
+  `addInteractionData`, and `RectangleTransform` (4th constructor arg). Without matching
+  values, interaction will not work.
+- **Use the correct select manager type.** Rectangle defaults to `maximumSelection: 1`
+  → `SelectManager` (single select). If `maximumSelection > 1`, use `MultiSelectManager`
+  and listen for `MULTI_SELECT_ON`/`MULTI_SELECT_OFF` events instead of
+  `SELECT_ON`/`SELECT_OFF`. See
+  [interactions-selection.md](interactions-selection.md) § Creating the Managers.
 - The `plane` option is required — use `settings.plane` if defined, otherwise provide defaults.
   It defines the 2D surface on which the transform operates. Convert it to the format with
   `type: RESTRICTION_TYPE.PLANE`.

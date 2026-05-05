@@ -130,6 +130,7 @@ import {
   convertUserDefinedNameFilters,
   gatherNodesForPattern,
   addInteractionData,
+  type NodeNameFilterPattern,
 } from "@shapediver/viewer.features.interaction";
 
 // Build an outputId → outputName mapping from the session

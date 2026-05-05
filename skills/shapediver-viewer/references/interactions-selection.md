@@ -2,6 +2,13 @@
 
 Requires an `InteractionEngine` instance (one per viewport).
 
+**Selection is the foundation for gumball and rectangle transforms.** In the App Builder,
+both [gumball-transform.md](gumball-transform.md) and
+[rectangle-transform.md](rectangle-transform.md) internally use the same selection
+infrastructure (`useSelection` hook) to let users pick nodes before attaching the
+transform gizmo. The `SelectManager` / `MultiSelectManager` setup, `componentId`
+scoping, and event handling described here apply to all three interaction types.
+
 ## Setup
 
 ```ts
@@ -9,22 +16,26 @@ import {
   InteractionEngine,
   InteractionData,
   SelectManager,
+  MultiSelectManager,
   HoverManager,
   addInteractionData,
 } from "@shapediver/viewer.features.interaction";
+import type { ITreeNode } from "@shapediver/viewer.shared.node-tree";
 import {
   addListener,
   removeListener,
   EVENTTYPE,
   MaterialStandardData,
   isSelectionParameterApi,
+  type IOutlineEffectDefinition,
 } from "@shapediver/viewer";
 
 // Create engine once per viewport
 const interactionEngine = new InteractionEngine(viewport);
 ```
 
-CDN: `new SDVInteractions.InteractionEngine(viewport)`.
+CDN: `new SDVInteractions.InteractionEngine(viewport)`,
+`new SDVInteractions.MultiSelectManager(componentId, effect, min, max)`.
 
 ## Component ID — Scoping Managers to InteractionData
 
@@ -71,7 +82,7 @@ import {
 // CDN: const { POST_PROCESSING_EFFECT_TYPE, BlendFunction, KernelSize } = SDV;
 
 // Blue outline for selected objects
-const selectionEffect = {
+const selectionEffect: IOutlineEffectDefinition = {
   type: POST_PROCESSING_EFFECT_TYPE.OUTLINE,
   properties: {
     blendFunction: BlendFunction.ALPHA,
@@ -84,7 +95,7 @@ const selectionEffect = {
 };
 
 // White outline for hovered objects
-const hoverEffect = {
+const hoverEffect: IOutlineEffectDefinition = {
   type: POST_PROCESSING_EFFECT_TYPE.OUTLINE,
   properties: {
     blendFunction: BlendFunction.ALPHA,
@@ -97,7 +108,7 @@ const hoverEffect = {
 };
 
 // White pulsing outline for available (selectable) objects
-const availableEffect = {
+const availableEffect: IOutlineEffectDefinition = {
   type: POST_PROCESSING_EFFECT_TYPE.OUTLINE,
   properties: {
     blendFunction: BlendFunction.ALPHA,
@@ -125,7 +136,30 @@ const selectionEffect = new MaterialStandardData({
 
 ### Creating the Managers
 
+**Use `MultiSelectManager` when `maximumSelection > 1`.** The App Builder determines
+which manager to use with this logic:
+
 ```ts
+const selectMultiple =
+  settings.minimumSelection !== undefined &&
+  settings.maximumSelection !== undefined &&
+  settings.minimumSelection <= settings.maximumSelection &&
+  settings.maximumSelection > 1;
+```
+
+When `selectMultiple` is `true`, use `MultiSelectManager` — it takes `minimumSelection`
+and `maximumSelection` as constructor arguments. When `false`, use `SelectManager`.
+
+```ts
+import {
+  InteractionEngine,
+  InteractionData,
+  SelectManager,
+  MultiSelectManager,
+  HoverManager,
+  addInteractionData,
+} from "@shapediver/viewer.features.interaction";
+
 const selectionParam = Object.values(session.parameters).find(
   isSelectionParameterApi,
 );
@@ -139,28 +173,42 @@ const settings = selectionParam?.settings?.props ?? selectionParam?.settings;
 // Use the parameter ID as the componentId for scoping
 const componentId = selectionParam.id;
 
-// Selection highlight (on click)
-const selectManager = new SelectManager(componentId, selectionEffect);
-if (settings?.maximumSelection != null) {
-  selectManager.maximumSelection = settings.maximumSelection;
-}
-if (settings?.minimumSelection != null) {
-  selectManager.minimumSelection = settings.minimumSelection;
+const minimumSelection = settings?.minimumSelection ?? 1;
+const maximumSelection = settings?.maximumSelection ?? 1;
+
+// Determine whether to use multi-select
+const selectMultiple =
+  minimumSelection <= maximumSelection && maximumSelection > 1;
+
+let selectManager;
+if (selectMultiple) {
+  // MultiSelectManager: min/max passed as constructor args (3rd and 4th)
+  selectManager = new MultiSelectManager(
+    componentId,
+    selectionEffect,
+    minimumSelection,
+    maximumSelection,
+  );
+} else {
+  // Single SelectManager: min/max set as properties
+  selectManager = new SelectManager(componentId, selectionEffect);
 }
 if (settings?.deselectOnEmpty != null) {
   selectManager.deselectOnEmpty = settings.deselectOnEmpty;
 }
-interactionEngine.addInteractionManager(selectManager);
+const selectMgrToken = interactionEngine.addInteractionManager(selectManager);
 
 // Hover highlight (on mouse move) — ALWAYS add this with selection
 // Only skip if settings.hover is explicitly false
+let hoverMgrToken;
 if (settings?.hover !== false) {
   const hoverManager = new HoverManager(componentId, hoverEffect);
-  interactionEngine.addInteractionManager(hoverManager);
+  hoverMgrToken = interactionEngine.addInteractionManager(hoverManager);
 }
 ```
 
 CDN: `new SDVInteractions.SelectManager(componentId, effect)`,
+`new SDVInteractions.MultiSelectManager(componentId, effect, min, max)`,
 `new SDVInteractions.HoverManager(componentId, effect)`.
 
 ## `param.settings` Reference
@@ -265,6 +313,11 @@ stops working after the first click**.
 
 Store the tokens returned by `addListener` — you need them for cleanup.
 
+### Single Selection (`maximumSelection` ≤ 1)
+
+When using `SelectManager`, listen for `SELECT_ON` and `SELECT_OFF`. The event
+provides `e.node` (a single node).
+
 **Both `SELECT_ON` and `SELECT_OFF` must update the parameter value.** If you only handle
 `SELECT_ON`, deselecting a node leaves stale data on the backend.
 
@@ -287,6 +340,109 @@ const deselectToken = addListener(
 );
 ```
 
+### Multi-Selection (`maximumSelection` > 1)
+
+When using `MultiSelectManager`, listen for `MULTI_SELECT_ON` and `MULTI_SELECT_OFF`
+instead. These events provide `e.nodes` — the **full array of currently selected
+nodes** (not just the added/removed node). The `MultiSelectManager` internally tracks
+which nodes are selected and enforces the min/max constraints.
+
+```ts
+const multiSelectOnToken = addListener(
+  EVENTTYPE.INTERACTION.MULTI_SELECT_ON,
+  async (e) => {
+    if (selectionParam) {
+      const names = e.nodes.map((n) => n.name);
+      selectionParam.value = JSON.stringify({ names });
+      // See "Acceptance Logic" below — you may defer customize()
+      await session.customize();
+    }
+  },
+);
+
+const multiSelectOffToken = addListener(
+  EVENTTYPE.INTERACTION.MULTI_SELECT_OFF,
+  async (e) => {
+    if (selectionParam) {
+      const names = e.nodes.map((n) => n.name);
+      selectionParam.value = JSON.stringify({ names });
+      await session.customize();
+    }
+  },
+);
+```
+
+**Do NOT listen for `SELECT_ON`/`SELECT_OFF` when using `MultiSelectManager`.** Multi-
+selection uses its own event types. Mixing them causes duplicate or missing updates.
+
+### Acceptance Logic — When to Call `customize()`
+
+The App Builder does not always call `customize()` immediately on every selection event.
+It uses an **acceptance pattern** based on `minimumSelection` and `maximumSelection`:
+
+```ts
+const acceptable =
+  selectedNodeNames.length >= minimumSelection &&
+  selectedNodeNames.length <= maximumSelection;
+
+// Auto-accept when the result is unambiguous:
+// - min === max: there's exactly one valid count (e.g., "select exactly 3")
+// - min === 0 && max === 1: single optional selection
+const acceptImmediately =
+  (minimumSelection === maximumSelection ||
+    (minimumSelection === 0 && maximumSelection === 1)) &&
+  acceptable;
+```
+
+**When `acceptImmediately` is true**, call `customize()` as soon as the constraint is
+met. The selection is submitted automatically without user confirmation.
+
+**When `acceptImmediately` is false** (e.g., "select between 2 and 5 objects"), the user
+needs a way to **confirm** or **cancel** their selection:
+
+- Show a **Confirm** button, enabled only when `acceptable` is `true`.
+- Show a **Cancel** button that resets to the previous value.
+- Display a prompt like `"Select between ${minimumSelection} and ${maximumSelection} objects"` or `"Select ${minimumSelection} object(s)"` when min === max.
+- Do NOT call `customize()` on every `MULTI_SELECT_ON`/`MULTI_SELECT_OFF` — accumulate
+  the names locally and only submit when the user clicks Confirm.
+
+```ts
+// Example: track selected names locally, submit on confirm
+let selectedNames = [];
+
+const multiSelectOnToken = addListener(
+  EVENTTYPE.INTERACTION.MULTI_SELECT_ON,
+  (e) => {
+    selectedNames = e.nodes.map((n) => n.name);
+    updateUI(selectedNames); // Update counter / enable confirm button
+  },
+);
+
+const multiSelectOffToken = addListener(
+  EVENTTYPE.INTERACTION.MULTI_SELECT_OFF,
+  (e) => {
+    selectedNames = e.nodes.map((n) => n.name);
+    updateUI(selectedNames);
+  },
+);
+
+// Called when user clicks Confirm
+async function confirmSelection() {
+  selectionParam.value = JSON.stringify({ names: selectedNames });
+  await session.customize();
+}
+
+// Called when user clicks Cancel
+function cancelSelection() {
+  // Reset to previous value
+  selectedNames = JSON.parse(selectionParam.value || '{"names":[]}').names;
+  selectManager.deselectAll(); // MultiSelectManager has deselectAll()
+}
+```
+
+**For simple use cases** where you don't need a confirm/cancel UI, calling `customize()`
+on every event is acceptable — but be aware that each call triggers a model recomputation.
+
 ## Teardown / Cleanup
 
 For multi-step UIs, dynamic configurators, or switching between different selection
@@ -294,16 +450,22 @@ parameters, you must fully tear down the previous selection state before setting
 a new one.
 
 ```ts
-function teardownSelection(tokens, selectMgr, hoverMgr, componentId) {
+function teardownSelection(listenerTokens, selectMgr, hoverMgr, selectMgrToken, hoverMgrToken, componentId) {
   // 1. Remove event listeners
-  for (const t of tokens) removeListener(t);
+  for (const t of listenerTokens) removeListener(t);
 
   // 2. Deselect all nodes before removing managers
-  if (selectMgr) selectMgr.deselect();
+  if (selectMgr) {
+    if (selectMgr instanceof MultiSelectManager) {
+      selectMgr.deselectAll();
+    } else {
+      selectMgr.deselect();
+    }
+  }
 
-  // 3. Remove interaction managers from engine
-  if (selectMgr) interactionEngine.removeInteractionManager(selectMgr);
-  if (hoverMgr) interactionEngine.removeInteractionManager(hoverMgr);
+  // 3. Remove interaction managers from engine (pass the token, not the manager)
+  if (selectMgrToken) interactionEngine.removeInteractionManager(selectMgrToken);
+  if (hoverMgrToken) interactionEngine.removeInteractionManager(hoverMgrToken);
 
   // 4. Remove InteractionData scoped to this componentId from the session root
   for (const data of [...session.node.data]) {
@@ -355,17 +517,21 @@ This prevents cross-contamination between steps — e.g., ground floor nodes won
 respond to the first floor's managers.
 
 ```ts
-let activeTokens = [];
+let activeListenerTokens = [];
 let activeSelectMgr = null;
 let activeHoverMgr = null;
+let activeSelectMgrToken = null;
+let activeHoverMgrToken = null;
 let activeComponentId = null;
 
 async function activateSelectionParam(selParamId) {
   // Tear down previous
   teardownSelection(
-    activeTokens,
+    activeListenerTokens,
     activeSelectMgr,
     activeHoverMgr,
+    activeSelectMgrToken,
+    activeHoverMgrToken,
     activeComponentId,
   );
 
@@ -380,18 +546,28 @@ async function activateSelectionParam(selParamId) {
   const settings = selParam.settings?.props ?? selParam.settings;
 
   // Set up new managers with componentId for scoping
-  activeSelectMgr = new SelectManager(componentId, selectionEffect);
-  if (settings?.maximumSelection != null)
-    activeSelectMgr.maximumSelection = settings.maximumSelection;
-  if (settings?.minimumSelection != null)
-    activeSelectMgr.minimumSelection = settings.minimumSelection;
+  const minimumSelection = settings?.minimumSelection ?? 1;
+  const maximumSelection = settings?.maximumSelection ?? 1;
+  const selectMultiple =
+    minimumSelection <= maximumSelection && maximumSelection > 1;
+
+  if (selectMultiple) {
+    activeSelectMgr = new MultiSelectManager(
+      componentId,
+      selectionEffect,
+      minimumSelection,
+      maximumSelection,
+    );
+  } else {
+    activeSelectMgr = new SelectManager(componentId, selectionEffect);
+  }
   if (settings?.deselectOnEmpty != null)
     activeSelectMgr.deselectOnEmpty = settings.deselectOnEmpty;
-  interactionEngine.addInteractionManager(activeSelectMgr);
+  activeSelectMgrToken = interactionEngine.addInteractionManager(activeSelectMgr);
 
   if (settings?.hover !== false) {
     activeHoverMgr = new HoverManager(componentId, hoverEffect);
-    interactionEngine.addInteractionManager(activeHoverMgr);
+    activeHoverMgrToken = interactionEngine.addInteractionManager(activeHoverMgr);
   }
 
   // Mark nodes — use addInteractionData with the same componentId
@@ -411,16 +587,32 @@ async function activateSelectionParam(selParamId) {
   }
 
   // Listen for events — store tokens for cleanup
-  activeTokens = [
-    addListener(EVENTTYPE.INTERACTION.SELECT_ON, async (e) => {
-      selParam.value = JSON.stringify({ names: [e.node.name] });
-      await session.customize();
-    }),
-    addListener(EVENTTYPE.INTERACTION.SELECT_OFF, async (e) => {
-      selParam.value = JSON.stringify({ names: [] });
-      await session.customize();
-    }),
-  ];
+  // Use the correct event types based on single vs multi-select
+  if (selectMultiple) {
+    activeListenerTokens = [
+      addListener(EVENTTYPE.INTERACTION.MULTI_SELECT_ON, async (e) => {
+        const names = e.nodes.map((n) => n.name);
+        selParam.value = JSON.stringify({ names });
+        await session.customize();
+      }),
+      addListener(EVENTTYPE.INTERACTION.MULTI_SELECT_OFF, async (e) => {
+        const names = e.nodes.map((n) => n.name);
+        selParam.value = JSON.stringify({ names });
+        await session.customize();
+      }),
+    ];
+  } else {
+    activeListenerTokens = [
+      addListener(EVENTTYPE.INTERACTION.SELECT_ON, async (e) => {
+        selParam.value = JSON.stringify({ names: [e.node.name] });
+        await session.customize();
+      }),
+      addListener(EVENTTYPE.INTERACTION.SELECT_OFF, async (e) => {
+        selParam.value = JSON.stringify({ names: [] });
+        await session.customize();
+      }),
+    ];
+  }
 }
 ```
 
@@ -487,3 +679,11 @@ selected, and removes it when a node is selected or when the output nodes are re
   post-processing effect definitions (→ outline effects). The App Builder defaults to
   outline effects. If `param.settings` provides them, use them as-is; otherwise, use
   outline effects for a polished look or `MaterialStandardData` for simplicity.
+- **Use `MultiSelectManager` when `maximumSelection > 1`.** Using `SelectManager` with
+  multi-selection settings will not work correctly — `SelectManager` only tracks one
+  selected node at a time. The `MultiSelectManager` constructor takes min/max as its
+  3rd and 4th arguments and fires `MULTI_SELECT_ON`/`MULTI_SELECT_OFF` events (with
+  `e.nodes` array) instead of `SELECT_ON`/`SELECT_OFF` (with `e.node` single).
+- **`MultiSelectManager.deselectAll()`** clears all selections. `SelectManager` uses
+  `.deselect()` instead. Use the correct method based on the manager type during
+  teardown.

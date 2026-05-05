@@ -140,6 +140,12 @@ function getSDErrorMessage(e: unknown): string {
 1. **Canvas ref:** Use `useRef` — never state.
 2. **Canvas always in DOM:** Never conditionally render the canvas. Use an overlay for loading states.
 3. **Strict Mode guard:** `if (!canvasRef.current || sessionRef.current) return;`
+   **⚠️** The guard prevents double initialization, but React 18 StrictMode still runs
+   cleanup (closing the viewport and destroying the WebGL context) before re-mounting.
+   In some environments the canvas WebGL context cannot recover after this, resulting
+   in a blank viewport even though the session loaded successfully. If the viewer
+   loads but renders a blank canvas, **remove `<React.StrictMode>`** from the root
+   render. This is the most reliable fix.
 4. **SSR safety:** Dynamic-import inside `useEffect`.
 5. **Order:** Viewport before Session.
 6. **Parameter sort:** `Object.values(session.parameters).filter(p => !p.hidden).sort((a,b) => (a.order??0) - (b.order??0))`
@@ -762,7 +768,7 @@ Always show the **exact error message** — don't paraphrase or summarize.
 | Model geometry never loads                        | `automaticSceneUpdate` set to `false` | Set `session.automaticSceneUpdate = true` (it defaults to `true`)    |
 | Parameter changes don't update scene              | `customize()` not called              | Call `await session.customize()` after `param.value`                 |
 | Parameter update silently fails                   | Incorrect value format                | Use `toSDValue()`; check with `param.isValid(value, true)`           |
-| Double viewport / WebGL context lost              | React 18 Strict Mode                  | Add `sessionRef.current` guard in `useEffect`                        |
+| Double viewport / WebGL context lost              | React 18 Strict Mode                  | Add `sessionRef.current` guard in `useEffect`; if still blank, remove `<React.StrictMode>` |
 | Blank canvas in Next.js / SSR                     | Module imported at top level          | Dynamic-import inside `useEffect`                                    |
 | `SDV is not defined`                              | Wrong CDN URL or load order           | Use correct URL; for React CDN use `await loadShapeDiverCDN()`       |
 | `SDV3 is not defined`                             | Wrong global name                     | The global is `SDV`, not `SDV3`                                      |

@@ -58,7 +58,7 @@ Once a strategy is selected, you **must** collect the following before proceedin
 all model metadata automatically:
 
 ```bash
-node ../../scripts/get-model-info.js <slug> <accessKeyId> <accessKeySecret>
+node ../../scripts/get-model-info.js <accessKeyId> <accessKeySecret> <slug>
 ```
 
 This returns JSON with the `model` object containing:
