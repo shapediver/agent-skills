@@ -96,16 +96,38 @@ Hand the user the App Builder URL and, if applicable, the theme JSON file.
   only the customizations the user requested.
 - The theme file location is clear (where to host it, how the `g` parameter references it).
 
+### Step 5: Serve Theme File Locally (if needed)
+
+If the theme JSON file is self-hosted and the user wants to test locally, the theme URL
+must be HTTPS — the App Builder runs on `https://appbuilder.shapediver.com`, so browsers
+block mixed-content fetches from plain HTTP.
+
+**Option A: Public HTTPS hosting (simplest)**
+
+Upload the theme JSON to any HTTPS-accessible location (e.g., GitHub Gist raw URL, S3,
+Netlify, or any static hosting) and use that URL for the `g` parameter.
+
+**Option B: Local HTTPS server**
+
+Use a local HTTPS tunnel or a dev server with TLS. For example, with `npx serve`:
+
+```bash
+npx serve --ssl-cert cert.pem --ssl-key key.pem -l 5000
+```
+
+Then use `https://localhost:5000/theme.json` for the `g` parameter.
+
+**Checkpoint:** The theme file is accessible via an HTTPS URL that the App Builder can fetch.
+
 ---
 
 ## Anti-Rationalization Table
 
-| You will think…                                                             | Why it is wrong                                                                                                                           |
-| :-------------------------------------------------------------------------- | :---------------------------------------------------------------------------------------------------------------------------------------- |
-| "I'll add `forceColorScheme: 'dark'` since dark mode looks better."         | This overrides every user's OS preference. Only set it when the user explicitly asks for a locked color scheme.                           |
-| "I'll include a full 10-shade palette to be thorough."                      | The user asked for a primary color change, not a full palette. Extra shades are untested and may clash. Only generate what was requested. |
-| "The user needs custom components, but I can hack it with theme overrides." | Theme overrides only control appearance (colors, fonts, layout). Custom components require the Fork strategy — suggest it.                |
-| "I'll add some extra component overrides to make it look more polished."    | Unrequested overrides may conflict with future App Builder updates. Scope discipline: only the properties the user asked for.             |
+| You will think…                                                             | Why it is wrong                                                                                                               |
+| :-------------------------------------------------------------------------- | :---------------------------------------------------------------------------------------------------------------------------- |
+| "I'll add `forceColorScheme: 'dark'` since dark mode looks better."         | This overrides every user's OS preference. Only set it when the user explicitly asks for a locked color scheme.               |
+| "The user needs custom components, but I can hack it with theme overrides." | Theme overrides only control appearance (colors, fonts, layout). Custom components require the Fork strategy — suggest it.    |
+| "I'll add some extra component overrides to make it look more polished."    | Unrequested overrides may conflict with future App Builder updates. Scope discipline: only the properties the user asked for. |
 
 ---
 

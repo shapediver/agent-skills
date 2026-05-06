@@ -50,11 +50,12 @@ Generate the iframe tag with the user's slug or ticket + modelViewUrl.
 
 ```html
 <iframe
-  src="https://appbuilder.shapediver.com/v1/main/latest/?slug=YOUR_SLUG"
   width="100%"
-  height="600"
+  height="480"
+  src="https://appbuilder.shapediver.com/v1/main/latest/?slug=YOUR_SLUG"
   referrerpolicy="origin"
   allowfullscreen
+  allow="clipboard-write"
   style="overflow: hidden; border-width: 0;"
 >
   <p>Your browser does not support iframes.</p>
@@ -106,12 +107,12 @@ Hand the user the complete, ready-to-paste HTML snippet.
 
 ## Anti-Rationalization Table
 
-| You will think…                                                               | Why it is wrong                                                                                                                                |
-| :---------------------------------------------------------------------------- | :--------------------------------------------------------------------------------------------------------------------------------------------- |
-| "I'll give them the iframe tag first and mention domain setup later."         | Without domain whitelisting, the iframe loads blank. Prerequisites must be confirmed before the snippet is useful.                              |
-| "The `referrerpolicy` attribute is optional — most browsers don't need it."   | Some browsers silently block the iframe without it. Always include `referrerpolicy="origin"`.                                                  |
-| "I'll wrap the iframe in a JavaScript loader for better UX."                  | The user asked for an iframe embed — zero code. Adding JavaScript violates scope discipline and creates maintenance burden.                     |
-| "I'll use the ticket + modelViewUrl instead of the slug since it's more flexible." | Slug is simpler and doesn't expose credentials. Only use ticket + modelViewUrl if the user explicitly asks or doesn't have a slug.            |
+| You will think…                                                                    | Why it is wrong                                                                                                                    |
+| :--------------------------------------------------------------------------------- | :--------------------------------------------------------------------------------------------------------------------------------- |
+| "I'll give them the iframe tag first and mention domain setup later."              | Without domain whitelisting, the iframe loads blank. Prerequisites must be confirmed before the snippet is useful.                 |
+| "The `referrerpolicy` attribute is optional — most browsers don't need it."        | Some browsers silently block the iframe without it. Always include `referrerpolicy="origin"`.                                      |
+| "I'll wrap the iframe in a JavaScript loader for better UX."                       | The user asked for an iframe embed — zero code. Adding JavaScript violates scope discipline and creates maintenance burden.        |
+| "I'll use the ticket + modelViewUrl instead of the slug since it's more flexible." | Slug is simpler and doesn't expose credentials. Only use ticket + modelViewUrl if the user explicitly asks or doesn't have a slug. |
 
 ---
 
@@ -132,6 +133,8 @@ the current version (`ShapeDiver App Builder SDK vX.Y.Z`).
   setting from domain whitelisting.
 - The `referrerpolicy="origin"` attribute is required — without it, the iframe may fail to
   load on some browsers.
+- The `allow="clipboard-write"` attribute is needed for App Builder's copy-to-clipboard
+  features. Without it, clipboard operations will silently fail in some browsers.
 - The slug is NOT the ticket or modelViewUrl. It's the URL identifier from shapediver.com.
   However, `ticket` + `modelViewUrl` can also be used as URL parameters if direct embedding
   is enabled.

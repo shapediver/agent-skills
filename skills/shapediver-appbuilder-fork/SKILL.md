@@ -108,6 +108,20 @@ Build and test the result.
 - No files outside the user's request were modified.
 - The `src/shared` submodule was not modified.
 
+### Step 5: Verify Domain Whitelisting
+
+The dev server runs at `http://127.0.0.1:3000`. If model metadata was retrieved via the
+API script, check the `allowedDomains` array in the script output for a matching localhost
+entry (e.g., `localhost:3000`, `127.0.0.1:3000`).
+
+If no matching entry exists, inform the user that they need to add `localhost:3000` (or
+`127.0.0.1:3000`) to the model's embedding domains at
+https://www.shapediver.com/app/settings/domains before the app will work locally —
+otherwise session creation will fail with HTTP 403.
+
+**Checkpoint:** The dev server port matches a whitelisted domain, or the user has been
+informed about the domain whitelisting requirement.
+
 ---
 
 ## Anti-Rationalization Table

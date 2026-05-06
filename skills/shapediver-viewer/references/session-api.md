@@ -93,7 +93,8 @@ or sharing (e.g., via URL parameter).
 - **`session.createModelState(parameterValues?, omitSessionParameterValues?, image?, data?, arScene?)`**: creates a saved state. Returns `Promise<string>` (state id).
 - **`session.getModelState(modelStateId?)`**: retrieves a model state.
 - **`session.customizeWithModelState(modelState)`**: applies a saved state's parameter values.
-- Model states have a **6-month lifetime**. Can be applied across models (matched by id/name).
+- Model states expire after **6 months of inactivity** (the timer resets each time the state is accessed). Can be applied across models (matched by id/name).
+- There is **no Viewer API to list all model states** — the Viewer SDK only supports get/create/apply by ID. To list all states for a model, use the Geometry SDK (`ModelStateApi.listModelStates`) or the Geometry Backend REST API: `GET /api/v2/model-state/model/{modelId}/list`.
 - Use `modelStateId` in `createSession` options to apply a state at init time.
 
 ```ts

@@ -117,7 +117,7 @@ async function main() {
     process.stderr.write(`Fetching model '${slug}'...\n`);
     let model;
     try {
-        const resp = await platformSdk.models.get(slug, ['ticket', 'backend_ticket', 'backend_system', 'token_view']);
+        const resp = await platformSdk.models.get(slug, ['ticket', 'backend_ticket', 'backend_system', 'token_view', 'accessdomains', 'global_accessdomains']);
         model = resp.data;
     } catch (e) {
         process.stderr.write(
@@ -181,6 +181,10 @@ async function main() {
             backendTicket: backendTicket,
             modelViewUrl: geometryBackendUrl,
             geometryBackendUrl, // alias kept for backwards compat
+            allowedDomains: [
+                ...((model.use_global_accessdomains !== false && model.global_accessdomains) || []),
+                ...(model.accessdomains || []),
+            ].map(d => d.name),
         },
         parameters: parameters.map(p => ({
             id: p.id,

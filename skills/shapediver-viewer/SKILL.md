@@ -113,6 +113,25 @@ against every one. Fix any violations.
 - Credentials are not exposed in UI input fields.
 - The code is a complete, runnable file — not a fragment.
 
+### Step 10: Serve Locally
+
+If model metadata was retrieved via the API script (Option A), check the `allowedDomains`
+array in the script output for a `localhost` entry (e.g., `localhost:5000`, `127.0.0.1:8080`).
+
+If a localhost domain with a specific port is found, serve the generated file on that port:
+
+```bash
+npx serve -l <port>
+```
+
+If no localhost entry exists in `allowedDomains`, inform the user that they need to add
+their local development domain (e.g., `localhost:3000`) to the model's embedding domains
+at https://www.shapediver.com/app/settings/domains before the viewer session will work
+locally — otherwise session creation will fail with HTTP 403.
+
+**Checkpoint:** The file is served on a port that matches a whitelisted domain, or the user
+has been informed about the domain whitelisting requirement.
+
 ---
 
 ## Obtaining Model-Specific Values
@@ -204,11 +223,16 @@ and text inputs fires continuously, causing HTTP 429 rate-limit errors.
 **Dropdown and checkbox are the ONLY controls where `onChange` is safe.**
 Use `onMouseUp`/`onChangeEnd`/`onBlur` for all others. See [core-patterns.md](references/core-patterns.md) § Commit Function.
 
-### Rule 2: Color picker — commit at end, not on every movement
+### Rule 2: Color picker — use debounced `input` + immediate `change`, not `onChange` or `onMouseUp`
 
-`onChange` on `<input type="color">` fires on every mouse movement. `onMouseUp` fires when
-opening the picker, not when selecting. Both are wrong.
-See [ui-patterns.md](references/ui-patterns.md) Pattern E for correct implementations.
+`onChange` on `<input type="color">` fires on every mouse movement — causes 429 errors.
+`onMouseUp` fires when *opening* the picker, not when selecting a color — wrong event.
+
+For CDN / vanilla JS, use **Pattern E2**: add an `input` listener with a ~300 ms debounce
+for live preview while dragging, **plus** a DOM `change` listener that clears the timer and
+commits immediately when the picker closes. Both listeners are required — `change`-only
+(Pattern E3) gives no live preview and feels unresponsive.
+See [ui-patterns.md](references/ui-patterns.md) Pattern E for all implementations.
 
 ### Rule 3: Slider — use `useRef` to avoid stale closures
 

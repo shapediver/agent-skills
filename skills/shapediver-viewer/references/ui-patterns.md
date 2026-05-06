@@ -205,9 +205,20 @@ function buildSlider(p, onCommit) {
 **⚠️ Use one of these patterns for ALL color parameters.**
 
 ❌ WRONG: `<input type="color" onChange={(e) => commitParam(p, e.target.value)} />`
-❌ WRONG: `<input type="color" onMouseUp={() => commitParam(p, color)} />`
+  → `onChange` fires on every mouse movement → HTTP 429 rate-limit errors.
 
-### Pattern E1: Mantine `ColorInput` (RECOMMENDED — App Builder pattern)
+❌ WRONG: `<input type="color" onMouseUp={() => commitParam(p, color)} />`
+  → `onMouseUp` fires when *opening* the picker, not when selecting a color.
+
+❌ AVOID (Pattern E3 alone): DOM `change` event only
+  → `change` fires only when the picker closes entirely — no live preview while dragging.
+  The model appears unresponsive during color selection. Use E2 instead.
+
+**Correct approach for CDN / vanilla JS:** combine a debounced `input` listener (live
+preview, ~300 ms) with a DOM `change` listener (clears the timer, commits immediately on
+close). See Pattern E2.
+
+### Pattern E1: Mantine `ColorInput` (RECOMMENDED — NPM / App Builder pattern)
 
 ```tsx
 import { ColorInput } from "@mantine/core";
@@ -225,7 +236,12 @@ function buildColorPicker(p, onCommit) {
 }
 ```
 
-### Pattern E2: Native `<input type="color">` with debounced commit
+### Pattern E2: Native `<input type="color">` with debounced commit (RECOMMENDED for CDN / vanilla JS)
+
+**Use this pattern for all CDN and plain-HTML projects.**
+`input` fires while dragging → debounced 300 ms for live preview.
+`change` fires when the picker closes → clears the pending timer and commits immediately.
+Both listeners are required — `change`-only (Pattern E3) gives no live preview.
 
 ```tsx
 function buildColorPicker(p, onCommit) {
@@ -265,7 +281,11 @@ function buildColorPicker(p, onCommit) {
 }
 ```
 
-### Pattern E3: Native `<input type="color">` with DOM `change` only (minimal)
+### Pattern E3: Native `<input type="color">` with DOM `change` only
+
+⚠️ **Avoid in most cases.** Commits only when the picker closes — no live preview while
+dragging. The model appears unresponsive. Only acceptable for non-interactive prototypes
+or when any network request during dragging is explicitly unwanted. Prefer Pattern E2.
 
 ```tsx
 function buildColorPicker(p, onCommit) {
