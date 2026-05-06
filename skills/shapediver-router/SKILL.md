@@ -90,3 +90,38 @@ After gathering the necessary information, **read the corresponding skill file(s
 - **Headless:** Tell the user you will now read the `shapediver-headless` skill, then read it.
 
 **Important:** Do NOT skip reading the skill, and do NOT skip telling the user which skill you are reading. The rules in the `shapediver-viewer` skill exist because LLMs consistently generate broken code without them (wrong `onChange` usage, stale closures, hardcoded DrawingTools settings, etc.).
+
+---
+
+## Step 4: Verify Before Delivering
+
+After the implementation skill finishes generating code, **walk through the user's stated
+workflow end-to-end** before delivering. This step applies to all strategies.
+
+### Verification checklist
+
+1. **Runnable artifact.** The delivered code is a complete, self-contained file (or set of
+   files) — not a fragment. For CDN: the HTML page can be opened in a browser. For NPM:
+   the project builds without errors. For iframe: the snippet is a valid `<iframe>` tag.
+2. **User workflow.** Re-read what the user originally asked for. For each requirement,
+   confirm the generated code addresses it:
+   - If they asked for a slider → there is a slider, it commits on interaction end, and it
+     calls `customize()`.
+   - If they asked for an export download → `export.request()` is called and the result is
+     downloaded.
+   - If they asked for an iframe embed → the domain setup prerequisites are mentioned and
+     the `<iframe>` tag is correct.
+3. **No silent failures.** Check for:
+   - Missing `await` on async calls (`createViewport`, `createSession`, `session.customize()`)
+   - Unclosed sessions (missing cleanup / `session.close()`)
+   - Wrong import paths or CDN URLs
+   - Invented model-specific values (parameter names, ticket, modelViewUrl)
+4. **Credentials are safe.** `ticket` and `modelViewUrl` are hardcoded from user-provided
+   values or placeholders — never exposed in UI input fields.
+
+**Checkpoint — exit criteria (all must be true before delivering to the user):**
+
+- Every user requirement has a corresponding piece of generated code.
+- The code is complete and runnable, not a snippet that requires surrounding context.
+- No invented model-specific values — only user-provided or placeholder values.
+- Cleanup (session/viewport close) is present where applicable.

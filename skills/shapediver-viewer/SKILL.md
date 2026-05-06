@@ -13,6 +13,106 @@ description: >
 
 Follow every rule in this file exactly. Do not improvise or work around any constraint.
 
+**Scope discipline:** Touch only what the user asked for. Do not add features, refactor
+adjacent code, or "improve" files beyond the stated request. If the user asks for a slider,
+build a slider — do not add export buttons, camera controls, or interaction features
+they did not request.
+
+---
+
+## Workflow
+
+Follow these steps in order. Do not skip steps or jump ahead to writing code.
+Each step has a checkpoint — do not proceed until the checkpoint is met.
+
+### Step 1: Collect Credentials and Model Metadata
+
+Obtain `ticket`, `modelViewUrl`, and parameter/output/export metadata.
+Use the API script (Option A below) or manual values from the user (Option B).
+
+**Checkpoint:** You have real values for `ticket` and `modelViewUrl`, OR you have inserted
+placeholders and asked the user to provide them. You have checked whether the model has an
+AppBuilder output (see "App Builder Output Check" below) and confirmed the user wants a
+custom Viewer API integration.
+
+### Step 2: Choose CDN or NPM
+
+Ask the user's stack if not obvious. Use CDN + plain HTML for single-page demos, prototypes,
+and embeds. Use NPM + framework for production apps with build tooling. See "Setup" below.
+
+**Checkpoint:** CDN or NPM decision is made. If CDN: you will use a single `bundle.js`
+script tag (Rule 7). If NPM: you know the framework (React, Vue, plain TS).
+
+### Step 3: Scaffold the Page / Component
+
+Create the HTML file or React component with the canvas element.
+
+**Checkpoint:** The canvas element is **always present in the DOM** — not conditionally
+rendered (Rule 11). If showing a loading state, it is an overlay on top of the
+always-present canvas. The correct script tag (CDN) or imports (NPM) are in place.
+
+### Step 4: Create Viewport and Session
+
+Write the initialization code: create viewport first, then session. Always `await` both.
+See "Quick API Overview" below.
+
+**Checkpoint:** `createViewport` is called before `createSession`. Both calls are awaited.
+`ticket` and `modelViewUrl` are hardcoded from user-provided values — not exposed as UI
+inputs (Rule 5). Error handling wraps initialization with `getSDErrorMessage` (Rule 8).
+
+### Step 5: Build Parameter Controls
+
+Render UI controls for each parameter based on `param.type`. Filter out `param.hidden`,
+sort by `param.order`, group by `param.group`.
+
+**Checkpoint — verify ALL of these before proceeding:**
+
+- Sliders (`Int`, `Float`, `Even`, `Odd`): commit on `onMouseUp` / `onChangeEnd`, NOT
+  `onChange` (Rule 1). React sliders use `useRef` to avoid stale closures (Rule 3).
+- Color pickers: commit at end of interaction, not on every movement (Rule 2). Format is
+  `0xRRGGBBAA` (Rule 4).
+- Dropdowns (`StringList`) and checkboxes (`Bool`): these are the ONLY controls where
+  `onChange` is safe.
+- Text inputs (`String`): commit on `onBlur`, NOT `onChange` (Rule 1).
+- `session.customize()` is called explicitly after setting `param.value` (Rules 9–10).
+- Values are formatted correctly per type — see "Parameter Formatting" reference.
+
+### Step 6: Add Interaction Features (if requested)
+
+Only if the user asked for interactions (selection, drag, drawing tools, gumball, etc.).
+Load the specific reference file listed in "Interaction Features" below.
+
+**Checkpoint:** Type guards are used before accessing `param.settings` (Rule 6). Settings
+are extracted with `param.settings?.props ?? param.settings` — never read directly from
+`param.settings`. The correct reference file has been read and its rules followed.
+
+### Step 7: Add Exports and Outputs (if requested)
+
+Only if the user asked for file downloads or data output reading.
+`export.request()` must be called explicitly — exports do not auto-trigger.
+
+**Checkpoint:** Export requests use the correct API. Output data is read from
+`output.content`. Error handling is in place.
+
+### Step 8: Add Cleanup
+
+Add `session.close()` and `viewport.close()` in the appropriate cleanup path
+(React `useEffect` return, `window.onbeforeunload`, etc.).
+
+**Checkpoint:** Both session and viewport are closed on teardown. No dangling sessions.
+
+### Step 9: Review Against Critical Rules
+
+Before delivering, re-read Critical Rules 1–12 below and verify the generated code
+against every one. Fix any violations.
+
+**Checkpoint — exit criteria (all must be true):**
+
+- Every Critical Rule (1–12) has been checked and the code complies.
+- No model-specific values are invented — only user-provided or placeholder values are used.
+- Credentials are not exposed in UI input fields.
+- The code is a complete, runnable file — not a fragment.
+
 ---
 
 ## Obtaining Model-Specific Values
@@ -177,6 +277,22 @@ Register `output.updateCallback` so the color override persists after server-tri
 geometry updates (e.g., after clicking Apply).
 
 See [advanced-patterns.md](references/advanced-patterns.md) Pattern L for the full implementation.
+
+---
+
+## Anti-Rationalization Table
+
+These are the shortcuts you will be tempted to take. Each one breaks the integration.
+
+| You will think…                                                             | Why it is wrong                                                                                                                                                      |
+| :-------------------------------------------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| "This is a simple demo, so `onChange` on the slider is fine."               | Every `customize()` is a network request. Even a demo hits HTTP 429 errors within seconds of dragging a slider. Use `onChangeEnd` / `onMouseUp`. Always.             |
+| "I'll add a text field for the ticket so the user can test easily."         | Tickets are credentials. Exposing them in a UI input trains users to paste secrets into form fields. Hardcode them from provided values.                             |
+| "I don't need `settings.props` — I'll read `settings.nameFilter` directly." | It returns `undefined` at runtime. The nested structure (`settings.props`) is how the API works. Always extract via `param.settings?.props ?? param.settings`.       |
+| "I know what parameter names this model has — I'll hardcode them."          | You do not know. Parameter names are model-specific. Use placeholders or values from the API script. Never invent names.                                             |
+| "The user asked for a configurator, so I'll add export buttons too."        | The user asked for what they asked for. Adding unrequested features violates scope discipline and bloats the code with untested behavior.                            |
+| "I'll use `esm.sh` / `unpkg` / `jsDelivr` for the CDN bundle."              | The only supported CDN URL is `https://viewer.shapediver.com/v3/latest/bundle.js`. Third-party CDNs serve broken or incomplete builds.                               |
+| "The code compiles, so it's correct — no need to re-check the rules."       | Rules 1–4 are violated in the majority of LLM-generated ShapeDiver code. Step 9 of the Workflow exists because this rationalization is the most common failure mode. |
 
 ---
 
