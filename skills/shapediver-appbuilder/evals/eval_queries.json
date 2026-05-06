@@ -1,0 +1,66 @@
+﻿[
+    {
+        "query": "I want to use the ShapeDiver App Builder for my model",
+        "should_trigger": true
+    },
+    {
+        "query": "what are my options for embedding a ShapeDiver model without custom code?",
+        "should_trigger": true
+    },
+    {
+        "query": "should I use an iframe, a theme, or fork the App Builder for my ShapeDiver project?",
+        "should_trigger": true
+    },
+    {
+        "query": "I want to put my ShapeDiver configurator on my website using the App Builder",
+        "should_trigger": true
+    },
+    {
+        "query": "help me choose an App Builder strategy for my ShapeDiver model",
+        "should_trigger": true
+    },
+    {
+        "query": "what's the easiest way to use ShapeDiver's built-in UI?",
+        "should_trigger": true
+    },
+    {
+        "query": "can I customize the ShapeDiver App Builder?",
+        "should_trigger": true
+    },
+    {
+        "query": "I want to embed my ShapeDiver model, do I need the Viewer API?",
+        "should_trigger": true
+    },
+    {
+        "query": "I need full custom code control over my ShapeDiver 3D viewer with JavaScript",
+        "should_trigger": false
+    },
+    {
+        "query": "create a Node.js script to export STL files from ShapeDiver on the server",
+        "should_trigger": false
+    },
+    {
+        "query": "add drag interaction to my ShapeDiver viewer",
+        "should_trigger": false
+    },
+    {
+        "query": "set up the ShapeDiver viewer with NPM in my React project from scratch",
+        "should_trigger": false
+    },
+    {
+        "query": "I want to build a Shopify product page with no 3D",
+        "should_trigger": false
+    },
+    {
+        "query": "how do I use WordPress page builders?",
+        "should_trigger": false
+    },
+    {
+        "query": "how do I create an iframe for a YouTube video?",
+        "should_trigger": false
+    },
+    {
+        "query": "how do I upload my Grasshopper definition to ShapeDiver?",
+        "should_trigger": false
+    }
+]

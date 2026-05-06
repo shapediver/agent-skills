@@ -1,0 +1,115 @@
+﻿{
+    "skill_name": "shapediver-viewer",
+    "evals": [
+        {
+            "id": 1,
+            "name": "cdn-slider-basic",
+            "prompt": "Create a simple HTML page with a ShapeDiver 3D viewer and a slider to control a parameter called 'Height'. Use CDN. ticket: abc123, modelViewUrl: https://sdr7euc1.eu-central-1.shapediver.com",
+            "expected_output": "A complete HTML page with the ShapeDiver CDN viewer, a canvas, and a slider that commits the parameter value on release — not on every change.",
+            "assertions": [
+                "Uses the correct CDN URL: https://viewer.shapediver.com/v3/latest/bundle.js",
+                "The script tag includes crossorigin=\"anonymous\"",
+                "Does NOT use onChange or oninput on the slider to call session.customize()",
+                "Uses onmouseup, onpointerup, onchange on a range input's release event, or an explicit apply/commit mechanism for the slider",
+                "Calls session.customize() after setting param.value",
+                "Does NOT set session.customizeOnParameterChange = true or pass customizeOnParameterChange: true",
+                "The canvas element is always present in the HTML (not created dynamically or conditionally)",
+                "Uses the SDV global (not SDV3 or ShapeDiver)",
+                "Uses the provided ticket 'abc123' and modelViewUrl, not placeholders"
+            ]
+        },
+        {
+            "id": 2,
+            "name": "react-color-picker",
+            "prompt": "Build a React component with a ShapeDiver viewer that has a color picker for the 'Material Color' parameter. Use NPM (@shapediver/viewer). ticket: abc123, modelViewUrl: https://sdr7euc1.eu-central-1.shapediver.com",
+            "expected_output": "A React component with proper color picker handling — commits on close/blur/apply, converts between #RRGGBB and 0xRRGGBBAA, uses useRef for value tracking.",
+            "assertions": [
+                "Does NOT use onChange on the color input to directly call session.customize()",
+                "Implements a safe commit strategy for the color picker (onBlur, close handler, debounce, or apply button)",
+                "Converts from ShapeDiver format (0xRRGGBBAA) to HTML (#RRGGBB) for display using slice(2, 8) — passing #rrggbb directly back to param.value is acceptable",
+                "Uses slice(2, 8) or equivalent for extracting RGB hex — NOT slice(-6)",
+                "Uses useRef (not just useState) for tracking current values to avoid stale closures in event handlers",
+                "The canvas element is always rendered in JSX (not conditionally rendered with && or ternary)",
+                "Calls session.customize() explicitly after setting param.value",
+                "Imports from @shapediver/viewer (not CDN globals)"
+            ]
+        },
+        {
+            "id": 3,
+            "name": "cdn-selection-interaction",
+            "prompt": "Add click-to-select interaction to a ShapeDiver viewer. When a user clicks a model part, it should be highlighted/selected. Use CDN. ticket: abc123, modelViewUrl: https://sdr7euc1.eu-central-1.shapediver.com",
+            "expected_output": "A complete HTML page with ShapeDiver CDN viewer that sets up an InteractionEngine and SelectManager for click-to-select behavior.",
+            "assertions": [
+                "Creates an InteractionEngine instance",
+                "Creates a SelectManager instance",
+                "Uses the SDVInteractions global or equivalent CDN interaction API",
+                "Does NOT hardcode node names or output names for interaction targets — uses the parameter's settings or asks the user",
+                "Uses the correct CDN bundle URL with crossorigin=\"anonymous\""
+            ]
+        },
+        {
+            "id": 4,
+            "name": "cdn-multi-param-types",
+            "prompt": "Create a ShapeDiver viewer page with UI controls for these parameters: a Float slider called 'Width', a StringList dropdown called 'Material' with choices, a Bool checkbox called 'Show Logo', and a Color picker called 'Base Color'. Use CDN. ticket: abc123, modelViewUrl: https://sdr7euc1.eu-central-1.shapediver.com",
+            "expected_output": "An HTML page with correct commit patterns for each parameter type — dropdown and checkbox use onChange, slider and color do not.",
+            "assertions": [
+                "The dropdown (StringList) uses onchange to commit — this is safe for dropdowns",
+                "The checkbox (Bool) uses onchange or onclick to commit — this is safe for checkboxes",
+                "The slider (Float) does NOT call session.customize() directly inside oninput or onchange — debounced/throttled patterns with setTimeout or an apply button are acceptable",
+                "The color picker does NOT use raw onChange/oninput to immediately call session.customize() — debounced input + native DOM change (Pattern E2) or an apply button is acceptable",
+                "Calls session.customize() after setting parameter values",
+                "Renders all four control types with appropriate HTML elements"
+            ]
+        },
+        {
+            "id": 5,
+            "name": "cdn-export-download",
+            "prompt": "Create a page that lets the user download an STL export from a ShapeDiver model. Show a download button that triggers the export. Use CDN. ticket: abc123, modelViewUrl: https://sdr7euc1.eu-central-1.shapediver.com. The export is called 'STL Export'.",
+            "expected_output": "An HTML page with a download button that calls export.request() to generate and download the STL file.",
+            "assertions": [
+                "Uses session.getExportByName('STL Export') or accesses session.exports to find the export",
+                "Calls export.request() or the export's request method to trigger the export",
+                "Provides a way for the user to download the resulting file (link, window.open, or programmatic download)",
+                "Does NOT assume the export URL is static — it must be requested each time"
+            ]
+        },
+        {
+            "id": 6,
+            "name": "cdn-drawing-tools",
+            "prompt": "Create a ShapeDiver viewer with drawing tools that let users draw polylines on the model. Use CDN. ticket: abc123, modelViewUrl: https://sdr7euc1.eu-central-1.shapediver.com",
+            "expected_output": "An HTML page that sets up drawing tools using the parameter's settings from the model, not hardcoded values.",
+            "assertions": [
+                "Uses SDVDrawingTools global from the CDN bundle",
+                "Reads the drawing parameter's settings from param.settings rather than hardcoding maxCount, pointRestrictions, etc.",
+                "Uses a type guard or type check (isDrawingParameterApi or equivalent) before accessing param.settings",
+                "Does NOT hardcode drawing tool configuration values like maxCount, pointRestrictions, or geometryRestrictions",
+                "Does NOT add extra script tags for drawing tools — the bundle.js includes everything"
+            ]
+        },
+        {
+            "id": 7,
+            "name": "cdn-error-handling",
+            "prompt": "Build a ShapeDiver viewer with proper error handling. Show meaningful error messages to the user if the session fails to load, or if parameter customization fails. Use CDN. ticket: abc123, modelViewUrl: https://sdr7euc1.eu-central-1.shapediver.com",
+            "expected_output": "An HTML page with try/catch error handling that extracts and displays real error messages, not generic ones.",
+            "assertions": [
+                "Uses try/catch around session creation (createSession)",
+                "Extracts the actual error message using e.message, getSDErrorMessage, or equivalent — not a generic 'Something went wrong'",
+                "Displays or logs the specific error details to the user",
+                "Also handles errors around session.customize() calls"
+            ]
+        },
+        {
+            "id": 8,
+            "name": "placeholder-behavior",
+            "prompt": "Create a ShapeDiver viewer page with parameter controls. I don't have my ticket or modelViewUrl yet.",
+            "expected_output": "The code should use placeholder strings for ticket and modelViewUrl, and the response should tell the user how to obtain these values.",
+            "assertions": [
+                "Uses the placeholder 'PASTE_YOUR_TICKET_HERE' or similar clearly-marked placeholder for the ticket",
+                "Uses the placeholder 'PASTE_YOUR_MODEL_VIEW_URL_HERE' or similar clearly-marked placeholder for the modelViewUrl",
+                "Does NOT invent fake ticket values (no random strings, no 'your-ticket-here' without clear placeholder marking)",
+                "The response text tells the user how to get these values (Developers tab, API script, or platform access keys)",
+                "Does NOT hardcode credential input fields for end users to type ticket/modelViewUrl into the UI"
+            ]
+        }
+    ]
+}

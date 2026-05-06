@@ -1,0 +1,66 @@
+[
+    {
+        "query": "fork the ShapeDiver App Builder and add custom React components",
+        "should_trigger": true
+    },
+    {
+        "query": "I need to add a custom panel to the ShapeDiver App Builder with my own React code",
+        "should_trigger": true
+    },
+    {
+        "query": "integrate my backend API with the ShapeDiver App Builder",
+        "should_trigger": true
+    },
+    {
+        "query": "where is the ShapeDiver App Builder source code? I want to modify it",
+        "should_trigger": true
+    },
+    {
+        "query": "clone the ShapeDiver App Builder and customize the parameter UI components",
+        "should_trigger": true
+    },
+    {
+        "query": "should I fork the App Builder or use the Viewer API directly?",
+        "should_trigger": true
+    },
+    {
+        "query": "add an e-commerce checkout flow to my ShapeDiver App Builder",
+        "should_trigger": true
+    },
+    {
+        "query": "what UI library does the ShapeDiver App Builder use? I want to extend it",
+        "should_trigger": true
+    },
+    {
+        "query": "embed my ShapeDiver model using an iframe snippet",
+        "should_trigger": false
+    },
+    {
+        "query": "change the brand colors and logo in the App Builder theme",
+        "should_trigger": false
+    },
+    {
+        "query": "build a ShapeDiver viewer from scratch with the Viewer V3 API",
+        "should_trigger": false
+    },
+    {
+        "query": "add drawing tools and gumball interaction to my ShapeDiver viewer",
+        "should_trigger": false
+    },
+    {
+        "query": "create a Node.js backend to batch-process ShapeDiver exports",
+        "should_trigger": false
+    },
+    {
+        "query": "fork a React boilerplate template for a new web app",
+        "should_trigger": false
+    },
+    {
+        "query": "how do I contribute to an open-source React project on GitHub?",
+        "should_trigger": false
+    },
+    {
+        "query": "upload my Grasshopper model to the ShapeDiver platform",
+        "should_trigger": false
+    }
+]
