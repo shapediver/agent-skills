@@ -6,7 +6,9 @@ description: >
   code. Covers the iframe HTML snippet, prerequisite domain setup, and iframe
   settings. Activate when the user mentions embedding, iframe, putting a
   ShapeDiver model on a webpage, or wants the simplest integration without
-  writing JavaScript.
+  writing JavaScript. Do NOT use this skill for customizing the App Builder's
+  appearance (colors, fonts, logos, themes) — those requests belong to the
+  theming skill.
 ---
 
 # ShapeDiver App Builder — Iframe Embedding

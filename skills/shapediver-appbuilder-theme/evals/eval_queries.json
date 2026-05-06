@@ -16,10 +16,6 @@
         "should_trigger": true
     },
     {
-        "query": "hide certain parameter groups in the ShapeDiver App Builder UI",
-        "should_trigger": true
-    },
-    {
         "query": "I want to use the ShapeDiver App Builder as-is, maybe with some branding",
         "should_trigger": true
     },

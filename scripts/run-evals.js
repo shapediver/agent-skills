@@ -8,6 +8,7 @@
  * Usage:
  *   node scripts/run-evals.js setup [--iteration N]
  *   node scripts/run-evals.js prompts [--iteration N] [--skill NAME] [--mode MODE]
+ *   node scripts/run-evals.js queries [--iteration N] [--skill NAME]
  *   node scripts/run-evals.js status [--iteration N]
  *   node scripts/run-evals.js --help
  *
@@ -54,6 +55,23 @@ function evalDir(skill, iteration, evalName, mode) {
   return path.join(workspaceDir(skill, iteration), `eval-${evalName}`, mode);
 }
 
+function findAllQueryEvals() {
+  const skills = fs.readdirSync(SKILLS_DIR).filter((d) =>
+    fs.statSync(path.join(SKILLS_DIR, d)).isDirectory() && !d.endsWith("-workspace")
+  );
+  const result = [];
+  for (const skill of skills) {
+    const data = readJSON(path.join(SKILLS_DIR, skill, "evals", "eval_queries.json"));
+    if (!data || !Array.isArray(data) || data.length === 0) continue;
+    result.push({ skill, queries: data });
+  }
+  return result;
+}
+
+function queryEvalDir(skill, iteration) {
+  return path.join(workspaceDir(skill, iteration), "query-evals", "with_skill");
+}
+
 // ---------------------------------------------------------------------------
 // Commands
 // ---------------------------------------------------------------------------
@@ -69,6 +87,12 @@ function cmdSetup(iteration) {
         created++;
       }
     }
+  }
+  const allQueryEvals = findAllQueryEvals();
+  for (const { skill } of allQueryEvals) {
+    const dir = path.join(queryEvalDir(skill, iteration), "outputs");
+    fs.mkdirSync(dir, { recursive: true });
+    created++;
   }
   console.log(`Created ${created} eval directories for iteration ${iteration}.`);
 }
@@ -113,6 +137,44 @@ function cmdPrompts(iteration, filterSkill, filterMode) {
   console.log(JSON.stringify(prompts, null, 2));
 }
 
+function cmdQueries(iteration, filterSkill) {
+  const allQueryEvals = findAllQueryEvals();
+  const prompts = [];
+
+  for (const { skill, queries } of allQueryEvals) {
+    if (filterSkill && skill !== filterSkill) continue;
+    const skillPath = path.join(SKILLS_DIR, skill, "SKILL.md");
+    const outputPath = path.join(queryEvalDir(skill, iteration), "outputs");
+    const queryList = queries.map((q, i) => `${i + 1}. "${q.query}"`).join("\n");
+
+    prompts.push({
+      skill,
+      mode: "with_skill",
+      agentPrompt: [
+        `Evaluate whether each query below should trigger the skill described in the skill file.`,
+        ``,
+        `- Skill: ${skill}`,
+        `- Skill file: ${skillPath}`,
+        `- Save results to: ${outputPath}/results.json`,
+        ``,
+        `Read the skill file first. Then, for each query, decide: would you invoke this skill to handle it?`,
+        `A query should trigger the skill if it falls within the skill's domain and the skill would be useful for answering it.`,
+        ``,
+        `Save results as a JSON array:`,
+        `[`,
+        `  { "query": "the exact query text", "triggered": true },`,
+        `  ...`,
+        `]`,
+        ``,
+        `Queries to classify:`,
+        queryList,
+      ].join("\n"),
+    });
+  }
+
+  console.log(JSON.stringify(prompts, null, 2));
+}
+
 function cmdStatus(iteration) {
   const allEvals = findAllEvals();
   const rows = [];
@@ -135,6 +197,20 @@ function cmdStatus(iteration) {
     }
   }
 
+  const allQueryEvals = findAllQueryEvals();
+  for (const { skill } of allQueryEvals) {
+    const dir = queryEvalDir(skill, iteration);
+    const hasOutputs = fs.existsSync(path.join(dir, "outputs", "results.json"));
+    const hasGrading = fs.existsSync(path.join(dir, "grading.json"));
+    rows.push({
+      skill,
+      eval: "(query-evals)",
+      mode: "with_skill",
+      outputs: hasOutputs ? "YES" : " - ",
+      grading: hasGrading ? "YES" : " - ",
+    });
+  }
+
   console.log("Skill".padEnd(34) + "Eval".padEnd(26) + "Mode".padEnd(16) + "Outputs  Grading");
   console.log("-".repeat(100));
   for (const r of rows) {
@@ -149,7 +225,8 @@ function cmdHelp() {
 
 Commands:
   setup    Create workspace directories for all evals
-  prompts  Print agent prompts for spawning eval runs
+  prompts  Print agent prompts for spawning code eval runs
+  queries  Print agent prompts for query classification evals
   status   Show which evals have outputs and grading
 
 Options:
@@ -185,6 +262,9 @@ switch (command) {
     break;
   case "prompts":
     cmdPrompts(iteration, getArg("skill", null), getArg("mode", "with_skill"));
+    break;
+  case "queries":
+    cmdQueries(iteration, getArg("skill", null));
     break;
   case "status":
     cmdStatus(iteration);

@@ -14,6 +14,9 @@
  *     Print a grading prompt for each eval that has outputs but no grading.json.
  *     Feed this to an LLM to produce grading.json files.
  *
+ *   node scripts/grade-evals.js grade-queries <iteration> [--skill SKILL_NAME]
+ *     Auto-grade query classification evals against eval_queries.json ground truth.
+ *
  *   node scripts/grade-evals.js report <iteration> [--skill SKILL_NAME]
  *     Print a human-readable report of all graded evals.
  *
@@ -58,6 +61,23 @@ function workspaceDir(skill, iteration) {
 
 function evalDir(skill, iteration, evalName, mode) {
   return path.join(workspaceDir(skill, iteration), `eval-${evalName}`, mode);
+}
+
+function findAllQueryEvals() {
+  const skills = fs.readdirSync(SKILLS_DIR).filter((d) =>
+    fs.statSync(path.join(SKILLS_DIR, d)).isDirectory() && !d.endsWith("-workspace")
+  );
+  const result = [];
+  for (const skill of skills) {
+    const data = readJSON(path.join(SKILLS_DIR, skill, "evals", "eval_queries.json"));
+    if (!data || !Array.isArray(data) || data.length === 0) continue;
+    result.push({ skill, queries: data });
+  }
+  return result;
+}
+
+function queryEvalDir(skill, iteration) {
+  return path.join(workspaceDir(skill, iteration), "query-evals", "with_skill");
 }
 
 function readOutputFiles(dir) {
@@ -149,6 +169,72 @@ function cmdPrepare(iteration, filterSkill) {
 }
 
 /**
+ * grade-queries — Automatically grade query classification evals by comparing
+ * agent results against eval_queries.json ground truth.
+ */
+function cmdGradeQueries(iteration, filterSkill) {
+  const allQueryEvals = findAllQueryEvals();
+  let anyGraded = false;
+
+  for (const { skill, queries } of allQueryEvals) {
+    if (filterSkill && skill !== filterSkill) continue;
+    const dir = queryEvalDir(skill, iteration);
+    const resultsPath = path.join(dir, "outputs", "results.json");
+    const results = readJSON(resultsPath);
+    if (!results || !Array.isArray(results)) {
+      console.error(`No results for ${skill} — skipping`);
+      continue;
+    }
+
+    const expected = new Map(queries.map((q) => [q.query, q.should_trigger]));
+    let tp = 0, fp = 0, tn = 0, fn = 0;
+    const queryResults = [];
+
+    for (const r of results) {
+      const exp = expected.get(r.query);
+      if (exp === undefined) {
+        console.error(`  Warning: unknown query in ${skill}: "${r.query}"`);
+        continue;
+      }
+      const actual = !!r.triggered;
+      if (actual && exp) tp++;
+      else if (actual && !exp) fp++;
+      else if (!actual && exp) fn++;
+      else tn++;
+      queryResults.push({ query: r.query, expected: exp, actual, correct: actual === exp });
+    }
+
+    const total = tp + fp + tn + fn;
+    const precision = tp + fp > 0 ? tp / (tp + fp) : 0;
+    const recall = tp + fn > 0 ? tp / (tp + fn) : 0;
+    const f1 = precision + recall > 0 ? (2 * precision * recall) / (precision + recall) : 0;
+    const accuracy = total > 0 ? (tp + tn) / total : 0;
+
+    const grading = {
+      query_results: queryResults,
+      confusion_matrix: { tp, fp, tn, fn },
+      summary: {
+        precision: +precision.toFixed(3),
+        recall: +recall.toFixed(3),
+        f1: +f1.toFixed(3),
+        accuracy: +accuracy.toFixed(3),
+        total,
+        correct: tp + tn,
+      },
+    };
+
+    const gradingPath = path.join(dir, "grading.json");
+    fs.writeFileSync(gradingPath, JSON.stringify(grading, null, 2));
+    console.log(`Graded ${skill}: ${tp + tn}/${total} correct (F1: ${f1.toFixed(3)}, P: ${precision.toFixed(3)}, R: ${recall.toFixed(3)})`);
+    anyGraded = true;
+  }
+
+  if (!anyGraded) {
+    console.log("No query eval results found to grade.");
+  }
+}
+
+/**
  * aggregate — Read all grading.json files and produce benchmark.json + report.
  */
 function cmdAggregate(iteration, filterSkill) {
@@ -183,6 +269,17 @@ function cmdAggregate(iteration, filterSkill) {
     }
   }
 
+  // Include query eval results
+  const allQueryEvals = findAllQueryEvals();
+  for (const { skill } of allQueryEvals) {
+    if (filterSkill && skill !== filterSkill) continue;
+    const dir = queryEvalDir(skill, iteration);
+    const grading = readJSON(path.join(dir, "grading.json"));
+    if (!grading || !grading.summary) continue;
+    if (!benchmarkData[skill]) benchmarkData[skill] = {};
+    benchmarkData[skill].query_evals = grading.summary;
+  }
+
   // Write benchmark.json per skill
   for (const [skill, modes] of Object.entries(benchmarkData)) {
     const benchDir = workspaceDir(skill, iteration);
@@ -190,6 +287,10 @@ function cmdAggregate(iteration, filterSkill) {
 
     const benchmark = { run_summary: {} };
     for (const [mode, data] of Object.entries(modes)) {
+      if (mode === "query_evals") {
+        benchmark.run_summary.query_evals = data;
+        continue;
+      }
       const mean = data.pass_rates.reduce((a, b) => a + b, 0) / data.pass_rates.length;
       const stddev = Math.sqrt(
         data.pass_rates.reduce((sum, v) => sum + (v - mean) ** 2, 0) / data.pass_rates.length
@@ -232,8 +333,7 @@ function cmdAggregate(iteration, filterSkill) {
  */
 function cmdReport(iteration, filterSkill) {
   const allEvals = findAllEvals();
-  let totalPassed = 0;
-  let totalFailed = 0;
+  const modeTotals = { with_skill: { passed: 0, failed: 0 }, without_skill: { passed: 0, failed: 0 } };
 
   for (const { skill, evals } of allEvals) {
     if (filterSkill && skill !== filterSkill) continue;
@@ -245,11 +345,12 @@ function cmdReport(iteration, filterSkill) {
         if (!grading || !grading.assertion_results) continue;
 
         const s = grading.summary || {};
-        const status = (s.failed || 0) === 0 ? "PASS" : "FAIL";
-        totalPassed += s.passed || 0;
-        totalFailed += s.failed || 0;
+        modeTotals[mode].passed += s.passed || 0;
+        modeTotals[mode].failed += s.failed || 0;
 
-        console.log(`${status} ${skill}/${ev.name} [${mode}] (${s.passed}/${s.total})`);
+        const status = (s.failed || 0) === 0 ? "PASS" : "FAIL";
+        const modeLabel = mode === "with_skill" ? "" : " [without_skill]";
+        console.log(`${status} ${skill}/${ev.name}${modeLabel} (${s.passed}/${s.total})`);
         for (const r of grading.assertion_results) {
           const mark = r.passed ? "  ✓" : "  ✗";
           console.log(`${mark} ${r.text}`);
@@ -260,11 +361,39 @@ function cmdReport(iteration, filterSkill) {
     }
   }
 
-  const total = totalPassed + totalFailed;
+  // Query eval results
+  const allQueryEvals = findAllQueryEvals();
+  for (const { skill } of allQueryEvals) {
+    if (filterSkill && skill !== filterSkill) continue;
+    const dir = queryEvalDir(skill, iteration);
+    const grading = readJSON(path.join(dir, "grading.json"));
+    if (!grading || !grading.query_results) continue;
+
+    const s = grading.summary;
+    console.log(`QUERY ${skill} — F1: ${s.f1} | P: ${s.precision} | R: ${s.recall} | Acc: ${s.accuracy} (${s.correct}/${s.total})`);
+    const mismatches = grading.query_results.filter((r) => !r.correct);
+    if (mismatches.length > 0) {
+      for (const r of mismatches) {
+        console.log(`  \u2717 expected=${r.expected} actual=${r.actual} "${r.query}"`);
+      }
+    }
+    console.log();
+  }
+
+  const ws = modeTotals.with_skill;
+  const wo = modeTotals.without_skill;
+  const wsTotal = ws.passed + ws.failed;
+  const woTotal = wo.passed + wo.failed;
+  const wsRate = wsTotal > 0 ? (ws.passed / wsTotal) * 100 : 0;
+  const woRate = woTotal > 0 ? (wo.passed / woTotal) * 100 : 0;
+  const delta = wsRate - woRate;
+
   console.log("=".repeat(60));
-  console.log(`TOTAL: ${totalPassed} passed, ${totalFailed} failed out of ${total}`);
-  if (total > 0) {
-    console.log(`Overall pass rate: ${((totalPassed / total) * 100).toFixed(1)}%`);
+  if (wsTotal > 0) {
+    console.log(`Pass rate: ${ws.passed}/${wsTotal} (${wsRate.toFixed(1)}%)`);
+  }
+  if (woTotal > 0) {
+    console.log(`Skill delta: ${delta >= 0 ? "+" : ""}${delta.toFixed(1)}% vs baseline (${wo.passed}/${woTotal} = ${woRate.toFixed(1)}% without skill)`);
   }
 }
 
@@ -272,9 +401,10 @@ function cmdHelp() {
   console.log(`Usage: node scripts/grade-evals.js <command> <iteration> [options]
 
 Commands:
-  prepare    Print grading prompts for evals that need grading (feed to LLM)
-  aggregate  Read grading.json files and produce benchmark.json
-  report     Print a human-readable report of all graded evals
+  prepare       Print grading prompts for code evals that need grading (feed to LLM)
+  grade-queries Auto-grade query classification evals against ground truth
+  aggregate     Read grading.json files and produce benchmark.json
+  report        Print a human-readable report of all graded evals
 
 Options:
   --iteration N    Iteration number (positional, required)
@@ -283,9 +413,10 @@ Options:
 
 Workflow:
   1. Run evals (see run-evals.js)
-  2. Grade: give 'prepare' output to an LLM, which writes grading.json files
-  3. Aggregate: run 'aggregate' to produce benchmark.json
-  4. Review: run 'report' for a summary, then inspect outputs by hand`);
+  2. Grade code evals: give 'prepare' output to an LLM, which writes grading.json files
+  3. Grade query evals: run 'grade-queries' to auto-grade from ground truth
+  4. Aggregate: run 'aggregate' to produce benchmark.json
+  5. Review: run 'report' for a summary, then inspect outputs by hand`);
 }
 
 // ---------------------------------------------------------------------------
@@ -316,6 +447,9 @@ const filterSkill = (() => {
 switch (command) {
   case "prepare":
     cmdPrepare(iteration, filterSkill);
+    break;
+  case "grade-queries":
+    cmdGradeQueries(iteration, filterSkill);
     break;
   case "aggregate":
     cmdAggregate(iteration, filterSkill);

@@ -101,7 +101,14 @@ https://www.shapediver.com/app/settings/developers
 
 ## Step 3: Skill Handoff
 
-After gathering the necessary information, **read the corresponding skill file(s)** before writing any code. **Always tell the user which skill file(s) you are about to read** — this is a required part of the handoff:
+**MANDATORY:** After gathering the necessary information, you MUST do two things before writing any code:
+
+1. **Tell the user** which skill file(s) you are about to read (e.g., "I'll now read the `shapediver-appbuilder-iframe` skill to guide you through the embedding.").
+2. **Read** the skill file.
+
+Never skip either step. The handoff announcement is a required part of the response.
+
+Skill mapping:
 
 - **App Builder (iframe, theme, or fork):** Tell the user you will now read the `shapediver-appbuilder` skill (or the specific sub-skill: `shapediver-appbuilder-iframe`, `shapediver-appbuilder-theme`, or `shapediver-appbuilder-fork` if the sub-strategy is already clear). Then read it — it will guide the user to the right sub-strategy.
 - **Viewer 3 API:** Tell the user you will now read the `shapediver-viewer` skill, then read it. It contains **critical rules (1–11)** at the top that must be followed — they prevent the most common LLM code generation errors. Interaction features (selection, drag, drawing tools, gumball) are included as references within the viewer skill.

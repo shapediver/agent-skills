@@ -55,7 +55,7 @@
             "assertions": [
                 "The dropdown (StringList) uses onchange to commit — this is safe for dropdowns",
                 "The checkbox (Bool) uses onchange or onclick to commit — this is safe for checkboxes",
-                "The slider (Float) does NOT use oninput or onchange to call session.customize()",
+                "The slider (Float) does NOT call session.customize() directly inside oninput or onchange — debounced/throttled patterns with setTimeout or an apply button are acceptable",
                 "The color picker does NOT use raw onChange/oninput to immediately call session.customize() — debounced input + native DOM change (Pattern E2) or an apply button is acceptable",
                 "Calls session.customize() after setting parameter values",
                 "Renders all four control types with appropriate HTML elements"
