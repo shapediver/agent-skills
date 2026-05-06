@@ -13,14 +13,22 @@ description: >
 
 Follow every rule in this file exactly. Do not improvise or work around any constraint.
 
-Embedding via iframe is the fastest way to get a ShapeDiver configurator on your website —
-no ticket, no API code, no setup beyond domain whitelisting.
+**Scope discipline:** Deliver only the iframe snippet and prerequisite instructions. Do not
+add JavaScript, custom styling beyond width/height, or suggest alternative strategies
+unless the user's requirements cannot be met by an iframe.
 
 ---
 
-## Prerequisites
+## Workflow
 
-1. **Set up embedding domains:** At least one domain must be listed in the "Global domains"
+Follow these steps in order.
+
+### Step 1: Confirm Prerequisites with the User
+
+Both prerequisites must be completed before the iframe will work. Walk the user through
+each one.
+
+1. **Embedding domains:** At least one domain must be listed in the "Global domains"
    for the account. Go to the [Settings page](https://www.shapediver.com/app/settings/domains) on
    shapediver.com to manage embedding domains.
    [Read more about embedding domains.](https://help.shapediver.com/doc/setup-domains-for-embedding)
@@ -32,9 +40,13 @@ no ticket, no API code, no setup beyond domain whitelisting.
    [Read more about iframe settings.](https://help.shapediver.com/doc/iframe-settings)
    If API tokens are available, you can check this setting using a script via the Platform API.
 
----
+**Checkpoint:** The user has confirmed (or you have verified via API) that both domain
+whitelisting and iframe embedding are enabled. Do not proceed without this — the iframe
+will show a blank page or error.
 
-## Iframe Embed
+### Step 2: Build the Iframe Snippet
+
+Generate the iframe tag with the user's slug or ticket + modelViewUrl.
 
 ```html
 <iframe
@@ -57,12 +69,12 @@ shown in the model's URL.
 **Alternative:** Instead of `slug`, you can use `ticket` and `modelViewUrl` URL parameters
 to reference the model (requires "Allow direct embedding" in the Developers section).
 
-You can customize the width and height of the iframe as needed.
+**Checkpoint:** The snippet contains the user's actual slug (or ticket + modelViewUrl) — not
+a placeholder, unless the user hasn't provided it yet (in which case ask).
 
----
+### Step 3: Add URL Parameters (if requested)
 
-## URL Parameters
-
+Only if the user needs initial parameter values, a theme, model state, or other options.
 Append these to the iframe `src` URL as query string parameters:
 
 | Parameter                 | Description                                                                                |
@@ -74,6 +86,32 @@ Append these to the iframe `src` URL as query string parameters:
 | `context`                 | Contextual info passed to the Grasshopper model (e.g., `cart`, `order`).                   |
 | `_{PARAM_NAME}`           | Set initial parameter values by prefixing the parameter name with `_` (e.g., `_Width=10`). |
 | `trackingDomain`          | Domain for web analytics tracking via plausible.io.                                        |
+
+**Checkpoint:** All user-requested parameters are included in the URL. No parameters were
+added that the user didn't ask for.
+
+### Step 4: Deliver
+
+Hand the user the complete, ready-to-paste HTML snippet.
+
+**Checkpoint — exit criteria (all must be true):**
+
+- Prerequisites (domain + iframe setting) have been confirmed or flagged.
+- The snippet is complete HTML — not a fragment requiring surrounding code.
+- `referrerpolicy="origin"` is present.
+- The slug or ticket values are the user's actual values, not placeholders (unless still
+  needed, in which case they are clearly marked).
+
+---
+
+## Anti-Rationalization Table
+
+| You will think…                                                               | Why it is wrong                                                                                                                                |
+| :---------------------------------------------------------------------------- | :--------------------------------------------------------------------------------------------------------------------------------------------- |
+| "I'll give them the iframe tag first and mention domain setup later."         | Without domain whitelisting, the iframe loads blank. Prerequisites must be confirmed before the snippet is useful.                              |
+| "The `referrerpolicy` attribute is optional — most browsers don't need it."   | Some browsers silently block the iframe without it. Always include `referrerpolicy="origin"`.                                                  |
+| "I'll wrap the iframe in a JavaScript loader for better UX."                  | The user asked for an iframe embed — zero code. Adding JavaScript violates scope discipline and creates maintenance burden.                     |
+| "I'll use the ticket + modelViewUrl instead of the slug since it's more flexible." | Slug is simpler and doesn't expose credentials. Only use ticket + modelViewUrl if the user explicitly asks or doesn't have a slug.            |
 
 ---
 

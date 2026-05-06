@@ -12,12 +12,38 @@ description: >
 
 Follow every rule in this file exactly. Do not improvise or work around any constraint.
 
+**Scope discipline:** Only modify or create files directly related to the user's request. Do
+not modify the `src/shared` submodule. Do not refactor existing App Builder code.
+
 Fork the App Builder when you need custom React components but still want the App Builder's
 session management, parameter routing, model state handling, and responsive layout.
 
 ---
 
-## Repository Structure
+## Workflow
+
+Follow these steps in order.
+
+### Step 1: Set Up the Development Environment
+
+Clone and initialize the repository:
+
+```bash
+git clone https://github.com/shapediver/AppBuilderSdk.git
+cd AppBuilderSdk
+pnpm i
+git submodule init
+git submodule update
+pnpm start
+```
+
+This runs the app in development mode at `http://127.0.0.1:3000`.
+
+**Checkpoint:** The dev server starts and loads the App Builder at localhost:3000.
+
+### Step 2: Understand the Architecture
+
+Read these before writing any custom component:
 
 - **[AppBuilderSdk](https://github.com/shapediver/AppBuilderSdk)**
   — The main App Builder React application (TypeScript, Vite).
@@ -26,9 +52,7 @@ session management, parameter routing, model state handling, and responsive layo
   `AppBuilderSdk` under the `src/shared` directory. Contains parameter handling logic,
   session management, state stores, and Mantine-based UI components.
 
-### AppBuilderShared directory layout
-
-The shared submodule follows a Feature-Sliced Design structure:
+**AppBuilderShared directory layout** (Feature-Sliced Design):
 
 | Directory             | Contents                                                |
 | :-------------------- | :------------------------------------------------------ |
@@ -38,55 +62,62 @@ The shared submodule follows a Feature-Sliced Design structure:
 | `shared/`             | Low-level shared utilities and hooks                    |
 | `widgets/appbuilder/` | App Builder widget components                           |
 
----
+**Key architectural facts:**
 
-## Getting Started
-
-```bash
-pnpm i
-git submodule init
-git submodule update
-pnpm start
-```
-
-This runs the app in development mode at `http://127.0.0.1:3000`.
-
----
-
-## Key Architectural Notes
-
-- The App Builder uses **Mantine** as its UI library and **Vite** as the build tool.
+- **Mantine** is the UI library, **Vite** is the build tool.
 - **State management** uses [zustand](https://github.com/pmndrs/zustand) stores:
-  - **Session store** (`useShapeDiverStoreSession`) — manages viewer sessions.
-  - **Viewport store** (`useShapeDiverStoreViewport`) — manages viewports.
-  - **Parameter & export store** (`useShapeDiverStoreParameters`) — stateful abstraction
-    of parameter and export functionality.
-- **App Builder skeleton:** The App Builder renders its UI from a JSON "skeleton" defined by
-  the `AppBuilder` data output of the Grasshopper model. The skeleton specifies containers,
-  tabs, widgets, and elements. Type definitions are in `shared/types/shapediver/appbuilder.ts`.
-- **Page templates:** Two templates are available (`appshell` default, `grid`), selectable
-  via the theme's `AppBuilderTemplateSelector` component overrides.
+  - `useShapeDiverStoreSession` — manages viewer sessions.
+  - `useShapeDiverStoreViewport` — manages viewports.
+  - `useShapeDiverStoreParameters` — stateful abstraction of parameter and export functionality.
+- **App Builder skeleton:** The UI renders from a JSON "skeleton" defined by the `AppBuilder`
+  data output. Type definitions are in `shared/types/shapediver/appbuilder.ts`.
+- **Page templates:** Two templates available (`appshell` default, `grid`).
 - Parameter commit patterns use `onChange` for display + `onChangeEnd` for commit
   (Mantine's convention). This fires one commit at the END of interaction, not continuously.
 
   Wrong: `<Slider onChange={(v) => commitParam(p.id, v)} />` — commits on every drag movement
   Correct: `<Slider onChange={(v) => setLocal(v)} onChangeEnd={(v) => commitParam(p.id, v)} />` — commits once at end
 
-- Review `src/shared` (the AppBuilderShared submodule) before building custom components —
-  it contains reusable hooks for sessions, parameters, exports, and UI.
+**Checkpoint:** You have reviewed `src/shared` and identified existing hooks and components
+relevant to the user's request. You are reusing existing abstractions, not reinventing them.
 
----
+### Step 3: Implement the Custom Component or Widget
 
-## Adding New Widgets
-
-To extend the App Builder with a new widget type:
+If adding a new widget type:
 
 1. Extend the skeleton type definition in `shared/types/shapediver/appbuilder.ts`
    (look for `IAppBuilderWidget`).
 2. Extend the skeleton validator in `shared/types/shapediver/appbuildertypecheck.ts`.
 3. Implement the widget React component.
 4. Plug it into `AppBuilderWidgetsComponent` in `shared/widgets/appbuilder/`.
-5. Build and deploy, or submit a pull request.
+
+If modifying existing behavior: make targeted edits in the appropriate component or hook.
+
+**Checkpoint:** The custom component uses existing stores and hooks from `src/shared`. The
+commit pattern uses `onChange` for display + `onChangeEnd` for commit (not `onChange` alone).
+
+### Step 4: Verify and Deliver
+
+Build and test the result.
+
+**Checkpoint — exit criteria (all must be true):**
+
+- The dev server starts without errors.
+- The custom component renders and behaves as the user requested.
+- Parameter commits fire once at interaction end, not continuously.
+- No files outside the user's request were modified.
+- The `src/shared` submodule was not modified.
+
+---
+
+## Anti-Rationalization Table
+
+| You will think…                                                          | Why it is wrong                                                                                                                                   |
+| :----------------------------------------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------ |
+| "I'll write my own session management hook — it's simpler."              | `useShapeDiverStoreSession` already handles this. Reinventing it introduces bugs and diverges from upstream updates.                              |
+| "I'll use `onChange` to commit slider values since Mantine supports it." | Mantine's `onChange` fires on every drag movement. Use `onChange` for display + `onChangeEnd` for commit — this is the App Builder's own pattern. |
+| "I need to modify the shared submodule to add my widget."                | New widgets plug in via `AppBuilderWidgetsComponent` without modifying shared code. Never modify `src/shared`.                                    |
+| "This would be easier with the Viewer API directly."                     | The fork gives you session management, parameter routing, and responsive layout for free.                                                         |
 
 ---
 
