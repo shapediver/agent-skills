@@ -85,39 +85,47 @@ full theme format, examples, and all available options.
 **Checkpoint:** The theme JSON contains `"version": "1.0"` and only the properties the user
 requested. No unrequested overrides were added.
 
-### Step 4: Deliver
+### Step 4: Test the Theme
 
-Hand the user the App Builder URL and, if applicable, the theme JSON file.
+**Preferred: `window.updateTheme` (no hosting required)**
+
+App Builder exposes `window.updateTheme(json)` in the browser. Use this to test the theme instantly without hosting the JSON file anywhere.
+
+1. Open the App Builder URL in a browser:
+   `https://www.shapediver.com/app/builder/v1/main/latest/?slug=YOUR_SLUG`
+2. Call `window.updateTheme(...)` with the theme JSON object in the browser console, or
+   — if you have browser tool access — inject it via `page.evaluate`.
+
+The theme updates live. Iterate rapidly, then write the final agreed theme to the JSON file.
+
+**Important:** `updateTheme` might not be available on the provided build. The final deliverable is always a JSON file (see Step 6) —
+`updateTheme` is for iteration only.
+
+**Checkpoint:** The theme has been visually verified in the browser before finalizing the JSON file.
+
+### Step 5: Iterate with the User
+
+Present the theme JSON to the user and ask if they want to test or adjust anything before
+finalizing. Use `window.updateTheme` (Step 5) to test changes live in the browser.
+
+**Checkpoint:** The user has reviewed the theme and confirmed it is ready to be delivered.
+
+### Step 6: Deliver the JSON File
+
+The final deliverable is the theme JSON file. Hand the user:
+
+1. The theme JSON file to host at any HTTPS-accessible URL (GitHub Gist raw, S3, Netlify,
+   any static host).
+2. The final App Builder URL with the `g=` parameter pointing to that hosted URL:
+   `https://www.shapediver.com/app/builder/v1/main/latest/?slug=YOUR_SLUG&g=https://your-host/theme.json`
 
 **Checkpoint — exit criteria (all must be true):**
 
 - The App Builder URL is complete with the user's slug.
-- If a theme was created: it is valid JSON, starts with `"version": "1.0"`, and contains
-  only the customizations the user requested.
-- The theme file location is clear (where to host it, how the `g` parameter references it).
-
-### Step 5: Serve Theme File Locally (if needed)
-
-If the theme JSON file is self-hosted and the user wants to test locally, the theme URL
-must be HTTPS — the App Builder runs on `https://appbuilder.shapediver.com`, so browsers
-block mixed-content fetches from plain HTTP.
-
-**Option A: Public HTTPS hosting (simplest)**
-
-Upload the theme JSON to any HTTPS-accessible location (e.g., GitHub Gist raw URL, S3,
-Netlify, or any static hosting) and use that URL for the `g` parameter.
-
-**Option B: Local HTTPS server**
-
-Use a local HTTPS tunnel or a dev server with TLS. For example, with `npx serve`:
-
-```bash
-npx serve --ssl-cert cert.pem --ssl-key key.pem -l 5000
-```
-
-Then use `https://localhost:5000/theme.json` for the `g` parameter.
-
-**Checkpoint:** The theme file is accessible via an HTTPS URL that the App Builder can fetch.
+- The theme JSON is valid, starts with `"version": "1.0"`, and contains only the
+  customizations the user requested.
+- The theme has been tested visually.
+- The user knows where to host the JSON file and how to reference it via `g=`.
 
 ---
 
