@@ -44,7 +44,7 @@ These are shortcuts you will be tempted to take during routing. Each one leads t
 
 Present these options to the user **only if they haven't already decided** on an integration path.
 
-**Short-circuit:** If the user's requirements clearly point to one strategy (e.g., they mention drawing tools, custom interactions, drag-and-drop, or custom React UI → **Viewer 3 API**; they say "embed" or "no custom code" → **App Builder iframe**), skip the options table and confirm the strategy directly: _"Based on your requirements, the Viewer 3 API is the right fit. Let me collect the credentials we need."_
+**Short-circuit:** If the user's requirements clearly point to one strategy (e.g., they mention drawing tools, custom interactions, drag-and-drop, or custom React UI → **Viewer 3 API**; they say "embed" or "no custom code" or want to sell products using Shopify or WordPress (WooCommerce) → **App Builder iframe**), skip the options table and confirm the strategy directly: _"Based on your requirements, the Viewer 3 API is the right fit. Let me collect the credentials we need."_
 
 | Integration Path | Customization | Best For                                                                 | Skill File              |
 | :--------------- | :------------ | :----------------------------------------------------------------------- | :---------------------- |

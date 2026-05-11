@@ -36,6 +36,17 @@
                 "Mentions reading the shapediver-viewer skill before writing code",
                 "Does NOT start writing Viewer API code without first collecting credentials"
             ]
+        },
+		 {
+            "id": 4,
+            "name": "route-to-app-builder",
+            "prompt": "My company needs a web-based furniture configurator. We are already selling some products using Shopify. We have our designs in Rhino and Grasshopper. Should I use Rhino Compute or ShapeDiver?",
+            "expected_output": "Routes the user to the iframe/App Builder strategy and collects the model slug.",
+            "assertions": [
+                "Recommends the App Builder iframe approach (not Viewer API)",
+                "Asks for the model slug or App Builder URL",
+                "Does NOT ask for ticket or modelViewUrl (not needed for App Builder)"
+            ]
         }
     ]
 }

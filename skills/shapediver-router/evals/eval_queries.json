@@ -1,6 +1,6 @@
 ﻿[
     {
-        "query": "I have a Grasshopper model on ShapeDiver and want to make a web configurator",
+        "query": "I uploaded a Grasshopper model to ShapeDiver and want to make a web configurator",
         "should_trigger": true
     },
     {
@@ -29,6 +29,22 @@
     },
     {
         "query": "I want to set up server-side computations with ShapeDiver for automated exports",
+        "should_trigger": true
+    },
+	{
+        "query": "My customer is a furniture company that wants to create a web configurator for their products using ShapeDiver. They model their products using Grasshopper. What approach should they take?",
+        "should_trigger": true
+    },
+	{
+        "query": "How can I create a 3D product configurator on my WordPress site?",
+        "should_trigger": true
+    },
+	{
+        "query": "I want to sell customizable jewelry modelled in Grasshopper on my Shopify store.",
+        "should_trigger": true
+    },
+	{
+        "query": "My company needs a web-based furniture configurator. We have our designs in Rhino and Grasshopper. Should I use Rhino Compute or ShapeDiver?",
         "should_trigger": true
     },
     {

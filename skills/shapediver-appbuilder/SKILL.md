@@ -5,8 +5,8 @@ description: >
   the ready-made configurator UI. Routes to the correct App Builder strategy:
   iframe embedding (zero code), App Builder with optional custom theme, or
   forking the open-source React app. Activate when the user mentions App
-  Builder, embedding a ShapeDiver model, or wants to use ShapeDiver without
-  writing custom Viewer API code.
+  Builder, embedding a ShapeDiver model, Shopify or WordPress (WooCommerce),
+  or wants to use ShapeDiver without writing custom Viewer API code.
 ---
 
 # ShapeDiver App Builder
