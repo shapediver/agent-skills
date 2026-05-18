@@ -51,7 +51,7 @@ Arguments:
   slug              Model slug, ID, or GUID (from shapediver.com/app/m/{slug})
 
 Options:
-  --client-id ID    OAuth client ID (default: 827bcbdc-8a5c-481a-b09a-e498074d91ca)
+  --client-id ID    OAuth client ID (default: cab26d46-f4c7-4f16-8f44-6c801e917d22)
   --platform-url U  Platform base URL (default: https://app.shapediver.com)
   --help, -h        Show this help message
 
@@ -70,7 +70,7 @@ Examples:
 }
 
 const positional = [];
-let clientId = '827bcbdc-8a5c-481a-b09a-e498074d91ca';
+let clientId = 'cab26d46-f4c7-4f16-8f44-6c801e917d22';
 let platformUrl = 'https://app.shapediver.com';
 
 for (let i = 0; i < args.length; i++) {
