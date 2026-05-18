@@ -6,6 +6,7 @@ description: >
   generation (STL, DXF, 3DM), data extraction from model outputs, price
   calculations, or CI/CD testing. Uses the @shapediver/sdk.geometry-api-sdk-v2
   package (Geometry SDK).
+license: MIT
 ---
 
 # ShapeDiver Geometry SDK — Headless Integration

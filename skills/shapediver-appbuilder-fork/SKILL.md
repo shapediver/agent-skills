@@ -8,6 +8,7 @@ description: >
   boundary between forking and using the Viewer V3 API directly.
   Do NOT use this skill for theming, branding, colors, or logo changes —
   those are handled by the shapediver-appbuilder-theme skill without forking.
+license: MIT
 ---
 
 # ShapeDiver App Builder — Open-Source Fork

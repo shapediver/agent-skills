@@ -7,6 +7,7 @@ description: >
   commit patterns, export downloads, React integration, and interaction features
   (selection, hover, drag, gumball, drawing tools, attribute visualization).
   Covers CDN and NPM workflows.
+license: MIT
 ---
 
 # ShapeDiver Viewer V3 API
@@ -226,7 +227,7 @@ Use `onMouseUp`/`onChangeEnd`/`onBlur` for all others. See [core-patterns.md](re
 ### Rule 2: Color picker — use debounced `input` + immediate `change`, not `onChange` or `onMouseUp`
 
 `onChange` on `<input type="color">` fires on every mouse movement — causes 429 errors.
-`onMouseUp` fires when *opening* the picker, not when selecting a color — wrong event.
+`onMouseUp` fires when _opening_ the picker, not when selecting a color — wrong event.
 
 For CDN / vanilla JS, use **Pattern E2**: add an `input` listener with a ~300 ms debounce
 for live preview while dragging, **plus** a DOM `change` listener that clears the timer and

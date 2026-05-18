@@ -7,6 +7,7 @@ description: >
   forking the open-source React app. Activate when the user mentions App
   Builder, embedding a ShapeDiver model, or wants to use ShapeDiver without
   writing custom Viewer API code.
+license: MIT
 ---
 
 # ShapeDiver App Builder

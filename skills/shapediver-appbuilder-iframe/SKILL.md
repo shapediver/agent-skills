@@ -9,6 +9,7 @@ description: >
   writing JavaScript. Do NOT use this skill for customizing the App Builder's
   appearance (colors, fonts, logos, themes) — those requests belong to the
   theming skill.
+license: MIT
 ---
 
 # ShapeDiver App Builder — Iframe Embedding

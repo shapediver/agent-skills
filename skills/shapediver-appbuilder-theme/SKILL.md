@@ -8,6 +8,7 @@ description: >
   corporate identity, or customizing the App Builder look without writing code.
   Use this instead of shapediver-appbuilder-fork when custom React components
   are not needed.
+license: MIT
 ---
 
 # ShapeDiver App Builder (with Optional Theme)

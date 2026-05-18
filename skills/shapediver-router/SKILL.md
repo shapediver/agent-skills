@@ -7,6 +7,7 @@ description: >
   the required credentials (ticket, modelViewUrl) and model metadata before
   handing off to the correct implementation skill. Activate whenever the user
   mentions ShapeDiver, Grasshopper-to-web, parametric 3D, or product configurator.
+license: MIT
 ---
 
 # ShapeDiver Router Skill
