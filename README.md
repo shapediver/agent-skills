@@ -1,4 +1,4 @@
-# ShapeDiver LLM Skills
+# ShapeDiver Agent Skills
 
 A collection of [Agent Skills](https://agentskills.io/) that give AI coding agents expert-level knowledge for building ShapeDiver 3D configurators.
 
