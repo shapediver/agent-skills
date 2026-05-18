@@ -11,7 +11,7 @@ A collection of [Agent Skills](https://agentskills.io/) that give AI coding agen
 gh skill install shapediver/agent-skills
 ```
 
-Requires the [GitHub CLI](https://cli.github.com/) with `gh skill` support. Works with GitHub Copilot, Claude Code, Cursor, Codex, Gemini CLI, Windsurf, Roo Code, and [many more](https://cli.github.com/manual/gh_skill_install).
+Requires the [GitHub CLI](https://cli.github.com/) with `gh skill` support. This launches an interactive prompt where you choose which skills to install and which AI assistant you are using. We recommend to always install _all_ skills. Works with GitHub Copilot, Claude Code, Cursor, Codex, Gemini CLI, Windsurf, Roo Code, and [many more](https://cli.github.com/manual/gh_skill_install).
 
 ### Option 2: Manual
 
