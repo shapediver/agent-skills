@@ -2,6 +2,44 @@
 
 A collection of [Agent Skills](https://agentskills.io/) that give AI coding agents expert-level knowledge for building ShapeDiver 3D configurators.
 
+## Installation
+
+### Option 1: GitHub CLI (recommended)
+
+```bash
+# Interactive — choose which skills to install and for which agent
+gh skill install shapediver/agent-skills
+```
+
+Requires the [GitHub CLI](https://cli.github.com/) with `gh skill` support. Works with GitHub Copilot, Claude Code, Cursor, Codex, Gemini CLI, Windsurf, Roo Code, and [many more](https://cli.github.com/manual/gh_skill_install).
+
+### Option 2: Manual
+
+Clone this repository and copy the skill folders you need into your agent's skills directory:
+
+```bash
+# Clone the repository
+git clone https://github.com/shapediver/agent-skills.git
+
+# Ensure the target directory exists
+mkdir -p .agents/skills
+
+# Copy the skill folders directly into your project
+cp -r agent-skills/skills/* .agents/skills/
+
+# Clean up the cloned repository folder (optional but recommended)
+rm -rf agent-skills
+```
+
+Common skill directory locations:
+
+| Agent          | Project scope                          | User scope                                  |
+| :------------- | :------------------------------------- | :------------------------------------------ |
+| GitHub Copilot | `.github/skills/` or `.agents/skills/` | `~/.copilot/skills/` or `~/.agents/skills/` |
+| Claude Code    | `.claude/skills/` or `.agents/skills/` | `~/.claude/skills/`                         |
+| Cursor         | `.cursor/skills/` or `.agents/skills/` | `~/.cursor/skills/`                         |
+| Others         | `.agents/skills/`                      | `~/.agents/skills/`                         |
+
 ## Skills
 
 | Skill                                                                          | Description                                                                                       |
