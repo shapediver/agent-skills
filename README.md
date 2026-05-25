@@ -2,6 +2,10 @@
 
 A collection of [Agent Skills](https://agentskills.io/) that give AI coding agents expert-level knowledge for building ShapeDiver 3D configurators.
 
+## For AI agents
+
+If this repository is in your workspace, read [`AGENTS.md`](AGENTS.md) for the required ShapeDiver workflow (router first, then implementation skills), skill routing, and how to install skills into the user's project.
+
 ## Installation
 
 ### Option 1: GitHub CLI (recommended)
