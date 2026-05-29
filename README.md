@@ -51,6 +51,7 @@ Common skill directory locations:
 | [`shapediver-appbuilder-theme`](skills/shapediver-appbuilder-theme/SKILL.md)   | App Builder with optional custom theme (colors, fonts, logo).                                     |
 | [`shapediver-appbuilder-fork`](skills/shapediver-appbuilder-fork/SKILL.md)     | Fork the open-source App Builder React app for custom components.                                 |
 | [`shapediver-headless`](skills/shapediver-headless/SKILL.md)                   | Headless/server-side integration via the Geometry SDK.                                            |
+| [`shapediver-geometry-backend`](skills/shapediver-geometry-backend/SKILL.md)   | Geometry Backend SDKs for TypeScript, Python, and PHP: sessions, outputs, exports, file parameters, tickets/JWTs, and modelViewUrl. |
 
 ## Structure
 
@@ -86,8 +87,19 @@ skills/
 │   └── SKILL.md
 ├── shapediver-appbuilder-fork/
 │   └── SKILL.md
-└── shapediver-headless/
-    └── SKILL.md
+├── shapediver-headless/
+│   └── SKILL.md
+└── shapediver-geometry-backend/
+    ├── SKILL.md
+    ├── evals/
+    │   ├── evals.json
+    │   └── eval_queries.json
+    └── references/
+        ├── sdk-typescript.md
+        ├── sdk-python.md
+        ├── sdk-php.md
+        ├── geometry-backend-concepts.md
+        └── openapi-on-demand.md
 ```
 
 Each skill follows the [Agent Skills specification](https://agentskills.io/specification) — a folder containing a `SKILL.md` file with YAML frontmatter (`name`, `description`) and Markdown instructions.

@@ -1,0 +1,73 @@
+{
+  "skill_name": "shapediver-geometry-backend",
+  "evals": [
+    {
+      "id": 1,
+      "name": "typescript-sdk-export",
+      "prompt": "Write a Node.js TypeScript example using @shapediver/sdk.geometry-api-sdk-v2 to create a ShapeDiver backend session and compute export ID export_stl with parameter width_param=120.",
+      "expected_output": "A TypeScript SDK example using Configuration, SessionApi, ExportApi or UtilsApi, a backend ticket/modelViewUrl, the provided parameter and export IDs, session reuse for related calls, and a close-session cleanup path.",
+      "assertions": [
+        "Uses @shapediver/sdk.geometry-api-sdk-v2 rather than raw cURL/REST.",
+        "Configures Configuration with the user's modelViewUrl placeholder or provided value.",
+        "Uses createSessionByTicket, reuses the session for related operations, and closes the session in finally.",
+        "Uses exports as an array containing export_stl.",
+        "Uses only width_param as the parameter ID and does not invent model-specific IDs.",
+        "Treats metadata/response sections as potentially permission-gated."
+      ]
+    },
+    {
+      "id": 2,
+      "name": "python-sdk-file-output",
+      "prompt": "Show Python code with geometry-api-v2 to upload a file parameter file_param and compute outputs for my ShapeDiver model.",
+      "expected_output": "A Python SDK flow that configures SdClient, creates a reusable session, uses FileApi.upload_file, uploads bytes to the returned href without backend auth, uses the returned file id as the parameter value, computes outputs, and closes the session after the workflow.",
+      "assertions": [
+        "Uses geometry-api-v2 imports and SDK classes rather than direct REST as the main path.",
+        "Uses the modelViewUrl in Configuration.",
+        "Requests the file upload asset through the SDK.",
+        "Uses the returned uploaded file id as the parameter value.",
+        "Reuses the same session for upload and output computation, then closes it in finally.",
+        "Handles missing response sections as possible permission issues."
+      ]
+    },
+    {
+      "id": 3,
+      "name": "php-sdk-session-output",
+      "prompt": "Generate PHP code using GeometryBackendSdkPhp to create a session with a backend ticket and compute outputs for parameter height_param=42.",
+      "expected_output": "A PHP SDK example using SdClient, SdConfig, SessionApi, OutputApi, the provided parameter ID, modelViewUrl/backend ticket placeholders, reusable session handling, permission-aware response checks, and session cleanup.",
+      "assertions": [
+        "Uses the PHP SDK classes and Composer setup guidance.",
+        "Configures SdConfig with modelViewUrl.",
+        "Uses createSessionByTicket and computeOutputs.",
+        "Uses only height_param as the parameter ID.",
+        "Reuses the session for related operations and closes it in finally.",
+        "Treats missing metadata/response sections as possible session or JWT permission issues."
+      ]
+    },
+    {
+      "id": 4,
+      "name": "language-selection",
+      "prompt": "I need backend ShapeDiver code but I can use Node, Python, or PHP. Which Geometry Backend SDK should I use and what do you need from me?",
+      "expected_output": "A concise SDK selection response listing the TypeScript, Python, and PHP SDKs, recommending based on existing stack, and requesting modelViewUrl, backend ticket or JWT, and model metadata.",
+      "assertions": [
+        "Presents all three SDK choices by language.",
+        "Prefers the user's existing runtime/stack instead of defaulting to REST.",
+        "Asks for modelViewUrl and backend ticket/JWT.",
+        "Mentions current parameter/output/export metadata and that some sections can depend on session/JWT permissions.",
+        "Does not add Viewer API or App Builder code."
+      ]
+    },
+    {
+      "id": 5,
+      "name": "openapi-on-demand",
+      "prompt": "I need to verify the exact ShapeDiver Geometry Backend SDK method and request schema for export computation from the OpenAPI spec.",
+      "expected_output": "Guidance to fetch geometry_backend_v2.yaml on demand, search operation IDs and schemas, then map the result back to SDK method naming conventions without embedding stale REST docs.",
+      "assertions": [
+        "Treats OpenAPI as secondary verification, not the primary implementation path.",
+        "Uses the geometry_backend_v2.yaml raw GitHub URL or clearly identifies it.",
+        "Mentions operation ID to SDK method mapping by language convention.",
+        "Says to prefer installed SDK generated types/tests for exact signatures.",
+        "Does not paste a large endpoint reference into the response."
+      ]
+    }
+  ]
+}
