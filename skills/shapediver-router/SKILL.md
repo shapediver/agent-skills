@@ -36,14 +36,15 @@ collected and the strategy is confirmed.
 
 These are shortcuts you will be tempted to take during routing. Each one leads to wasted effort.
 
-| You will think…                                                                       | Why it is wrong                                                                                                                                               |
-| :------------------------------------------------------------------------------------ | :------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| "The user said 'configurator' so I'll jump straight to the Viewer API."               | Most users are better served by the App Builder. Ask first — the Viewer API is only needed for full programmatic control.                                     |
-| "I'll skip credential gathering and use placeholder values for now."                  | Placeholders propagate into generated code and are never replaced. Collect real values or explicitly mark placeholders and ask the user.                      |
-| "I don't need to read the implementation skill — I already know the API."             | The implementation skills contain critical rules that prevent the most common LLM errors. Skipping them produces broken code. Reading the skill is mandatory. |
-| "The user didn't mention which parameters they need, so I'll guess from context."     | Parameter names are model-specific and unknowable without metadata. Ask the user or run the API script.                                                       |
-| "This is a simple request, I can skip the strategy selection step."                   | Even simple requests benefit from confirming the strategy. A wrong path wastes the user's time and yours.                                                     |
-| "The user said 'use the Viewer API', so I'll skip checking for an AppBuilder output." | The model itself may be an App Builder model. The presence of an AppBuilder output overrides the user's assumed intent — confirm before proceeding.           |
+| You will think…                                                                       | Why it is wrong                                                                                                                                                                                            |
+| :------------------------------------------------------------------------------------ | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| "The user said 'configurator' so I'll jump straight to the Viewer API."               | Most users are better served by the App Builder. Ask first — the Viewer API is only needed for full programmatic control.                                                                                  |
+| "I'll skip credential gathering and use placeholder values for now."                  | Placeholders propagate into generated code and are never replaced. Collect real values or explicitly mark placeholders and ask the user.                                                                   |
+| "I don't need to read the implementation skill — I already know the API."             | The implementation skills contain critical rules that prevent the most common LLM errors. Skipping them produces broken code. Reading the skill is mandatory.                                              |
+| "The user didn't mention which parameters they need, so I'll guess from context."     | Parameter names are model-specific and unknowable without metadata. Ask the user or run the API script.                                                                                                    |
+| "This is a simple request, I can skip the strategy selection step."                   | Even simple requests benefit from confirming the strategy. A wrong path wastes the user's time and yours.                                                                                                  |
+| "The user said 'use the Viewer API', so I'll skip checking for an AppBuilder output." | The model itself may be an App Builder model. The presence of an AppBuilder output overrides the user's assumed intent — confirm before proceeding.                                                        |
+| "I've collected what the user needs — my job here is done."                           | The final required act of this skill is the handoff announcement. You must tell the user which implementation skill you are about to read, then read it. Stopping before that means the user gets no code. |
 
 ---
 
@@ -51,7 +52,9 @@ These are shortcuts you will be tempted to take during routing. Each one leads t
 
 Present these options to the user **only if they haven't already decided** on an integration path.
 
-**Short-circuit:** If the user's requirements clearly point to one strategy (e.g., they mention drawing tools, custom interactions, drag-and-drop, or custom React UI → **Viewer 3 API**; they say "embed" or "no custom code" → **App Builder iframe**), skip the options table and confirm the strategy directly: _"Based on your requirements, the Viewer 3 API is the right fit. Let me collect the credentials we need."_
+**Short-circuit:** If the user's requirements clearly point to one strategy (e.g., they mention drawing tools, custom interactions, drag-and-drop, or custom React UI → **Viewer 3 API**; they say "embed" or "no custom code" → **App Builder iframe**), skip the options table and confirm the strategy directly, **naming the implementation skill in the same sentence**: _"Based on your requirements, the Viewer 3 API is the right fit — I'll use the `shapediver-viewer` skill to implement it. Let me collect the credentials we need."_
+
+**When presenting options:** Once the user selects a strategy, confirm it and name the skill you will read: _"Great — I'll use the `shapediver-appbuilder-iframe` skill for this. First, I need your model slug."_ Do not wait until Step 3 to name the skill.
 
 | Integration Path | Customization | Best For                                                                 | Skill File              |
 | :--------------- | :------------ | :----------------------------------------------------------------------- | :---------------------- |

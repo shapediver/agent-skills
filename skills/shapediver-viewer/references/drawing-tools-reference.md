@@ -4,6 +4,10 @@
 
 Uses `@shapediver/viewer.features.drawing-tools` (NPM) or `SDVDrawingTools` (CDN).
 
+> **CDN reminder:** For CDN projects, the factory function is **`SDVDrawingTools.createDrawingTools(...)`** —
+> not a bare `createDrawingTools(...)` call. `SDVDrawingTools` is a separate global from `SDV`.
+> Both are included in the single `bundle.js`; no extra script tag is needed.
+
 Drawing parameters can also appear as **dynamic parameters** in the AppBuilder output.
 See [dynamic-parameters.md](dynamic-parameters.md).
 
@@ -244,10 +248,10 @@ Drawing controls settings (extensible). Passed through to the drawing tools SDK.
 
 ### `activeMode` and `prompt`
 
-| Property       | Type     | Description                                                 |
-| :------------- | :------- | :---------------------------------------------------------- |
-| `activeMode`   | `string` | `"activeOnStart"` to auto-activate the drawing tool on load |
-| `prompt`       | `object` | `{ activeTitle, activeText, inactiveTitle }` — UI text overrides |
+| Property     | Type     | Description                                                      |
+| :----------- | :------- | :--------------------------------------------------------------- |
+| `activeMode` | `string` | `"activeOnStart"` to auto-activate the drawing tool on load      |
+| `prompt`     | `object` | `{ activeTitle, activeText, inactiveTitle }` — UI text overrides |
 
 **Use ALL defined settings.** When constructing the `settings` object for `createDrawingTools`,
 include every section that is present in `param.settings`: `geometry`, `restrictions`,

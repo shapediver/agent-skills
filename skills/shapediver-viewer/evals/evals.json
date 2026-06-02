@@ -15,7 +15,7 @@
                 "Does NOT set session.customizeOnParameterChange = true or pass customizeOnParameterChange: true",
                 "The canvas element is always present in the HTML (not created dynamically or conditionally)",
                 "Uses the SDV global (not SDV3 or ShapeDiver)",
-                "Uses the provided ticket 'abc123' and modelViewUrl, not placeholders"
+                "The ticket variable is assigned exactly 'abc123' and modelViewUrl is assigned 'https://sdr7euc1.eu-central-1.shapediver.com' — neither is a generic placeholder string like PASTE_YOUR_TICKET_HERE"
             ]
         },
         {
@@ -24,7 +24,7 @@
             "prompt": "Build a React component with a ShapeDiver viewer that has a color picker for the 'Material Color' parameter. Use NPM (@shapediver/viewer). ticket: abc123, modelViewUrl: https://sdr7euc1.eu-central-1.shapediver.com",
             "expected_output": "A React component with proper color picker handling — commits on close/blur/apply, converts between #RRGGBB and 0xRRGGBBAA, uses useRef for value tracking.",
             "assertions": [
-                "Does NOT use onChange on the color input to directly call session.customize()",
+                "Does NOT call session.customize() on every color change movement — must use a debounced input handler for live preview and only commit on final selection (via onChange close event, onBlur, or apply button)",
                 "Implements a safe commit strategy for the color picker (onBlur, close handler, debounce, or apply button)",
                 "Converts from ShapeDiver format (0xRRGGBBAA) to HTML (#RRGGBB) for display using slice(2, 8) — passing #rrggbb directly back to param.value is acceptable",
                 "Uses slice(2, 8) or equivalent for extracting RGB hex — NOT slice(-6)",
@@ -76,7 +76,7 @@
         {
             "id": 6,
             "name": "cdn-drawing-tools",
-            "prompt": "Create a ShapeDiver viewer with drawing tools that let users draw polylines on the model. Use CDN. ticket: abc123, modelViewUrl: https://sdr7euc1.eu-central-1.shapediver.com",
+            "prompt": "Create a ShapeDiver viewer with drawing tools that let users draw polylines on the model. Use CDN. ticket: abc123, modelViewUrl: https://sdr7euc1.eu-central-1.shapediver.com. The drawing parameter is called 'Draw Points'.",
             "expected_output": "An HTML page that sets up drawing tools using the parameter's settings from the model, not hardcoded values.",
             "assertions": [
                 "Uses SDVDrawingTools global from the CDN bundle",
@@ -101,13 +101,12 @@
         {
             "id": 8,
             "name": "placeholder-behavior",
-            "prompt": "Create a ShapeDiver viewer page with parameter controls. I don't have my ticket or modelViewUrl yet.",
+            "prompt": "Create a ShapeDiver viewer page with a slider control for a parameter. Use CDN. I don't have my ticket or modelViewUrl yet.",
             "expected_output": "The code should use placeholder strings for ticket and modelViewUrl, and the response should tell the user how to obtain these values.",
             "assertions": [
                 "Uses the placeholder 'PASTE_YOUR_TICKET_HERE' or similar clearly-marked placeholder for the ticket",
                 "Uses the placeholder 'PASTE_YOUR_MODEL_VIEW_URL_HERE' or similar clearly-marked placeholder for the modelViewUrl",
                 "Does NOT invent fake ticket values (no random strings, no 'your-ticket-here' without clear placeholder marking)",
-                "The response text tells the user how to get these values (Developers tab, API script, or platform access keys)",
                 "Does NOT hardcode credential input fields for end users to type ticket/modelViewUrl into the UI"
             ]
         }

@@ -98,6 +98,9 @@ sort by `param.order`, group by `param.group`.
 - Text inputs (`String`): commit on `onBlur`, NOT `onChange` (Rule 1).
 - `session.customize()` is called explicitly after setting `param.value` (Rules 9–10).
 - Values are formatted correctly per type — see "Parameter Formatting" reference.
+- **When multiple parameter types are requested, ALL must appear in the delivered file.**
+  A partial implementation is not acceptable — do not truncate or omit any requested
+  control type. Prioritize complete code over explanatory prose.
 
 ### Step 6: Add Interaction Features (if requested)
 
@@ -231,6 +234,10 @@ If missing, use the placeholder and ask.
 | Output name/ID    | `"OUTPUT_NAME_OR_ID"`              |
 | Export name/ID    | `"EXPORT_NAME_OR_ID"`              |
 
+**When the user provides values** (e.g., `ticket: abc123` in the prompt): use them
+exactly as-is. Do NOT add comments calling them placeholders or suggesting they need
+to be replaced — they are the real values.
+
 Do NOT filter or group parameters by guessing names. If grouping is needed, ask the user
 for exact names/IDs. `param.type` tells you how to render a control, not which group it
 belongs to.
@@ -252,12 +259,19 @@ Use `onMouseUp`/`onChangeEnd`/`onBlur` for all others. See [core-patterns.md](re
 ### Rule 2: Color picker — use debounced `input` + immediate `change`, not `onChange` or `onMouseUp`
 
 `onChange` on `<input type="color">` fires on every mouse movement — causes 429 errors.
+This applies to **both React (`onChange`) and vanilla JS** — in both environments the event
+fires continuously while the user drags. Do NOT use `onChange` (React) or `oninput` (DOM)
+for color pickers, **even indirectly through a wrapper function** — if `onChange` triggers
+any path that calls `session.customize()`, it violates this rule.
 `onMouseUp` fires when _opening_ the picker, not when selecting a color — wrong event.
 
 For CDN / vanilla JS, use **Pattern E2**: add an `input` listener with a ~300 ms debounce
 for live preview while dragging, **plus** a DOM `change` listener that clears the timer and
 commits immediately when the picker closes. Both listeners are required — `change`-only
 (Pattern E3) gives no live preview and feels unresponsive.
+For React, `onChange` on `<input type="color">` maps to the DOM `change` event (fires only
+when the picker closes, not on every movement) — so `onChange` can be used for the final
+commit. Pair it with a debounced `onInput` for live preview (Pattern E2).
 See [ui-patterns.md](references/ui-patterns.md) Pattern E for all implementations.
 
 ### Rule 3: Slider — use `useRef` to avoid stale closures
