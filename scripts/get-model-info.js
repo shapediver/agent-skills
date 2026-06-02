@@ -218,9 +218,15 @@ async function main() {
     };
 
     process.stdout.write(JSON.stringify(result, null, 2) + '\n');
+    const appBuilderOutput = outputs.find(o => o.name.toLowerCase() === 'appbuilder');
     process.stderr.write(
         `Done. Found ${parameters.length} parameters, ${outputs.length} outputs, ${exports_.length} exports.\n`
     );
+    if (appBuilderOutput) {
+        process.stderr.write(
+            `\u26a0 WARNING: This model has an AppBuilder output.\n`
+        );
+    }
 }
 
 main().catch(err => {

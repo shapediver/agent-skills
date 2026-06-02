@@ -13,6 +13,11 @@ license: MIT
 
 # ShapeDiver App Builder (with Optional Theme)
 
+> **Prerequisite:** This skill assumes you have already read and followed the
+> `shapediver-router` skill. If you arrived here directly, stop — read
+> `shapediver-router` first. It selects the correct integration strategy and
+> gathers required credentials before any implementation skill is read.
+
 Follow every rule in this file exactly. Do not improvise or work around any constraint.
 
 **Scope discipline:** Only generate theme properties the user explicitly requested. Do not
@@ -39,14 +44,19 @@ is sufficient.
 
 ### Step 2: Build the App Builder URL
 
-The App Builder is available at `https://appbuilder.shapediver.com/v1/main/latest/?slug=YOUR_SLUG`.
+The App Builder is available at `https://www.shapediver.com/app/builder/v1/main/latest/?slug=YOUR_SLUG`.
 
 Replace `YOUR_SLUG` with the model slug from shapediver.com.
 
 If a theme file will be used, append `&g=THEME_URL`:
-`https://appbuilder.shapediver.com/v1/main/latest/?slug=YOUR_SLUG&g=theme.json`
+`https://www.shapediver.com/app/builder/v1/main/latest/?slug=YOUR_SLUG&g=theme.json`
 
 The `g` value can be a relative or absolute URL. When self-hosting the file, use an absolute URL.
+
+> **⚠ Mixed content:** Never use `http://localhost` as the `g=` value when the App Builder
+> is loaded from `https://`. Browsers block HTTP resources fetched by HTTPS pages — the
+> theme fetch will silently fail with "failed to fetch". For local testing, use
+> `window.updateTheme` in the browser console (see Step 4) instead of `g=`.
 
 **Checkpoint:** The URL contains the user's actual slug. If a theme is needed, the `g`
 parameter points to a valid location.

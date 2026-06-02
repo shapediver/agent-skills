@@ -13,6 +13,11 @@ license: MIT
 
 # ShapeDiver App Builder — Open-Source Fork
 
+> **Prerequisite:** This skill assumes you have already read and followed the
+> `shapediver-router` skill. If you arrived here directly, stop — read
+> `shapediver-router` first. It selects the correct integration strategy and
+> gathers required credentials before any implementation skill is read.
+
 Follow every rule in this file exactly. Do not improvise or work around any constraint.
 
 **Scope discipline:** Only modify or create files directly related to the user's request. Do

@@ -12,6 +12,11 @@ license: MIT
 
 # ShapeDiver App Builder
 
+> **Prerequisite:** This skill assumes you have already read and followed the
+> `shapediver-router` skill. If you arrived here directly, stop — read
+> `shapediver-router` first. It selects the correct integration strategy and
+> gathers required credentials before any implementation skill is read.
+
 You are guiding the user to the right App Builder strategy. Ask clarifying questions
 if the intent is not clear, then hand off to the correct skill.
 
@@ -52,7 +57,7 @@ Collect the required information for the chosen strategy before handing off.
 
 #### Iframe
 
-- [ ] **Slug or full App Builder URL** (e.g., `https://appbuilder.shapediver.com/v1/main/latest/?slug=my-model`).
+- [ ] **Slug or full App Builder URL** (e.g., `https://www.shapediver.com/app/builder/v1/main/latest/?slug=my-model`).
       Alternatively, the model can be referenced via `ticket` + `modelViewUrl` URL parameters,
       or via a theme JSON file using the `g` parameter.
 

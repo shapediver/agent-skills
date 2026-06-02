@@ -11,6 +11,11 @@ license: MIT
 
 # ShapeDiver Geometry SDK — Headless Integration
 
+> **Prerequisite:** This skill assumes you have already read and followed the
+> `shapediver-router` skill. If you arrived here directly, stop — read
+> `shapediver-router` first. It selects the correct integration strategy and
+> gathers required credentials before any implementation skill is read.
+
 This file is a **binding specification**. Follow every rule exactly as written.
 Do not improvise, infer, or work around any constraint defined here.
 
@@ -90,8 +95,11 @@ Run the shared script at the repository root (self-contained — auto-installs
 dependencies on first run, requires Node.js):
 
 ```bash
-node ../../scripts/get-model-info.js <slug> <accessKeyId> <accessKeySecret>
+node ../../scripts/get-model-info.js <accessKeyId> <accessKeySecret> <slug>
 ```
+
+> **Note:** Adjust `../../scripts/` to the actual path of the script relative to your
+> current working directory. From a project at the workspace root, use `scripts/get-model-info.js`.
 
 The script outputs clean JSON to stdout (diagnostics to stderr) with `model`, `parameters`,
 `outputs`, and `exports`. Run with `--help` for full usage and exit codes.

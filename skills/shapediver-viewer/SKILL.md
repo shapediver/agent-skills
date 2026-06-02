@@ -12,6 +12,11 @@ license: MIT
 
 # ShapeDiver Viewer V3 API
 
+> **Prerequisite:** This skill assumes you have already read and followed the
+> `shapediver-router` skill. If you arrived here directly, stop — read
+> `shapediver-router` first. It selects the correct integration strategy and
+> gathers required credentials before any implementation skill is read.
+
 Follow every rule in this file exactly. Do not improvise or work around any constraint.
 
 **Scope discipline:** Touch only what the user asked for. Do not add features, refactor
@@ -32,9 +37,25 @@ Obtain `ticket`, `modelViewUrl`, and parameter/output/export metadata.
 Use the API script (Option A below) or manual values from the user (Option B).
 
 **Checkpoint:** You have real values for `ticket` and `modelViewUrl`, OR you have inserted
-placeholders and asked the user to provide them. You have checked whether the model has an
-AppBuilder output (see "App Builder Output Check" below) and confirmed the user wants a
-custom Viewer API integration.
+placeholders and asked the user to provide them. You have confirmed the AppBuilder output
+check below.
+
+### Step 1a: AppBuilder Output Check (mandatory before writing any code)
+
+Scan the outputs list from the script or user-provided metadata for an output named
+**"AppBuilder"** (exact name, case-insensitive). Do this **before reading further**.
+
+**If found:** Stop. Ask the user:
+
+> _"This model has an AppBuilder output — it is configured for the ShapeDiver App Builder.
+> Are you sure you want a custom Viewer API integration instead? The App Builder may
+> already cover your needs with less effort."_
+
+If they confirm custom integration, document their reason and continue.
+If they want App Builder, hand off to the `shapediver-appbuilder` skill.
+
+**Checkpoint:** You have confirmed no AppBuilder output exists, OR the user has explicitly
+confirmed they want a custom integration despite the AppBuilder output.
 
 ### Step 2: Choose CDN or NPM
 
@@ -147,8 +168,11 @@ Run the shared script at the repository root (self-contained — auto-installs
 dependencies on first run, requires Node.js):
 
 ```bash
-node ../../scripts/get-model-info.js <slug> <accessKeyId> <accessKeySecret>
+node ../../scripts/get-model-info.js <accessKeyId> <accessKeySecret> <slug>
 ```
+
+> **Note:** Adjust `../../scripts/` to the actual path of the script relative to your
+> current working directory. From a project at the workspace root, use `scripts/get-model-info.js`.
 
 The script outputs clean JSON to stdout (diagnostics to stderr). The `model` object
 contains two tickets and the model view URL:
@@ -175,6 +199,20 @@ generated code.
 enable it automatically. Access keys are created at
 https://www.shapediver.com/app/settings/developers
 
+**After running the script:** Before reading the full JSON, extract and review all output
+names to check for an AppBuilder output:
+
+```bash
+# Linux / macOS
+cat model-info.json | node -e "const d=require('fs').readFileSync('/dev/stdin','utf8'); JSON.parse(d).outputs.forEach(o=>console.log(o.name))"
+
+# Windows PowerShell
+Get-Content model-info.json | node -e "const d=require('fs').readFileSync('/dev/stdin','utf8'); JSON.parse(d).outputs.forEach(o=>console.log(o.name))"
+```
+
+This reveals all output names in under a second and prevents missing a late-appearing
+AppBuilder output in a long JSON file.
+
 ### Option B: Manual values from the user
 
 If the user provides `ticket` and `modelViewUrl` directly (from the "Developers" tab on
@@ -196,19 +234,6 @@ If missing, use the placeholder and ask.
 Do NOT filter or group parameters by guessing names. If grouping is needed, ask the user
 for exact names/IDs. `param.type` tells you how to render a control, not which group it
 belongs to.
-
-### App Builder Output Check
-
-If the model metadata (retrieved via the script or provided by the user) contains an output
-named **"AppBuilder"**, pause and ask the user:
-
-> _"This model has an AppBuilder output, which means it is configured for the ShapeDiver
-> App Builder. Are you sure you want to build a custom Viewer API integration instead of
-> using the App Builder? The App Builder may already cover your needs with less effort."_
-
-This may be intentional (e.g., the user needs features beyond what App Builder offers), but
-confirm before proceeding. If the user decides to switch, hand off to the
-`shapediver-appbuilder` skill.
 
 ---
 

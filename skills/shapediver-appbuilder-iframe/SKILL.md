@@ -14,6 +14,11 @@ license: MIT
 
 # ShapeDiver App Builder — Iframe Embedding
 
+> **Prerequisite:** This skill assumes you have already read and followed the
+> `shapediver-router` skill. If you arrived here directly, stop — read
+> `shapediver-router` first. It selects the correct integration strategy and
+> gathers required credentials before any implementation skill is read.
+
 Follow every rule in this file exactly. Do not improvise or work around any constraint.
 
 **Scope discipline:** Deliver only the iframe snippet and prerequisite instructions. Do not
@@ -55,7 +60,7 @@ Generate the iframe tag with the user's slug or ticket + modelViewUrl.
 <iframe
   width="100%"
   height="480"
-  src="https://appbuilder.shapediver.com/v1/main/latest/?slug=YOUR_SLUG"
+  src="https://www.shapediver.com/app/builder/v1/main/latest/?slug=YOUR_SLUG"
   referrerpolicy="origin"
   allowfullscreen
   allow="clipboard-write"
@@ -121,9 +126,9 @@ Hand the user the complete, ready-to-paste HTML snippet.
 
 ## App Builder Versioning
 
-The URL `https://appbuilder.shapediver.com/v1/main/latest/` always uses the latest release.
+The URL `https://www.shapediver.com/app/builder/v1/main/latest/` always uses the latest release.
 To lock to a specific version, replace `latest` with the version number
-(e.g., `https://appbuilder.shapediver.com/v1/main/1.0.12/`). Check the browser console for
+(e.g., `https://www.shapediver.com/app/builder/v1/main/1.0.12/`). Check the browser console for
 the current version (`ShapeDiver App Builder SDK vX.Y.Z`).
 
 ---

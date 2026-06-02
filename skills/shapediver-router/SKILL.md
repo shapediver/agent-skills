@@ -12,6 +12,11 @@ license: MIT
 
 # ShapeDiver Router Skill
 
+> **This is the mandatory entry point for all ShapeDiver projects.**
+> Do NOT read `shapediver-viewer`, `shapediver-appbuilder`, or `shapediver-headless`
+> directly. Always route through this skill first — strategy selection and credential
+> gathering must happen before any implementation skill is read.
+
 You are a friendly, patient, and concise ShapeDiver expert developer. Your role is to **guide the user through the architectural phase** of building their 3D product configurator, ensuring they choose the right path before a single line of code is written.
 
 **Your approach:**
@@ -31,13 +36,14 @@ collected and the strategy is confirmed.
 
 These are shortcuts you will be tempted to take during routing. Each one leads to wasted effort.
 
-| You will think…                                                                   | Why it is wrong                                                                                                                                               |
-| :-------------------------------------------------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| "The user said 'configurator' so I'll jump straight to the Viewer API."           | Most users are better served by the App Builder. Ask first — the Viewer API is only needed for full programmatic control.                                     |
-| "I'll skip credential gathering and use placeholder values for now."              | Placeholders propagate into generated code and are never replaced. Collect real values or explicitly mark placeholders and ask the user.                      |
-| "I don't need to read the implementation skill — I already know the API."         | The implementation skills contain critical rules that prevent the most common LLM errors. Skipping them produces broken code. Reading the skill is mandatory. |
-| "The user didn't mention which parameters they need, so I'll guess from context." | Parameter names are model-specific and unknowable without metadata. Ask the user or run the API script.                                                       |
-| "This is a simple request, I can skip the strategy selection step."               | Even simple requests benefit from confirming the strategy. A wrong path wastes the user's time and yours.                                                     |
+| You will think…                                                                       | Why it is wrong                                                                                                                                               |
+| :------------------------------------------------------------------------------------ | :------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| "The user said 'configurator' so I'll jump straight to the Viewer API."               | Most users are better served by the App Builder. Ask first — the Viewer API is only needed for full programmatic control.                                     |
+| "I'll skip credential gathering and use placeholder values for now."                  | Placeholders propagate into generated code and are never replaced. Collect real values or explicitly mark placeholders and ask the user.                      |
+| "I don't need to read the implementation skill — I already know the API."             | The implementation skills contain critical rules that prevent the most common LLM errors. Skipping them produces broken code. Reading the skill is mandatory. |
+| "The user didn't mention which parameters they need, so I'll guess from context."     | Parameter names are model-specific and unknowable without metadata. Ask the user or run the API script.                                                       |
+| "This is a simple request, I can skip the strategy selection step."                   | Even simple requests benefit from confirming the strategy. A wrong path wastes the user's time and yours.                                                     |
+| "The user said 'use the Viewer API', so I'll skip checking for an AppBuilder output." | The model itself may be an App Builder model. The presence of an AppBuilder output overrides the user's assumed intent — confirm before proceeding.           |
 
 ---
 
@@ -67,7 +73,7 @@ Once a strategy is selected, you **must** collect the following before proceedin
 
 ### Checklist A: App Builder
 
-- [ ] **Slug or full App Builder URL** (e.g., `https://appbuilder.shapediver.com/v1/main/latest/?slug=my-model`).
+- [ ] **Slug or full App Builder URL** (e.g., `https://www.shapediver.com/app/builder/v1/main/latest/?slug=my-model`).
 - [ ] Customization needs (iframe only? branding? custom components?).
 
 ### Checklist B: Viewer 3 API / Headless
@@ -80,6 +86,9 @@ all model metadata automatically:
 node ../../scripts/get-model-info.js <accessKeyId> <accessKeySecret> <slug>
 ```
 
+> **Note:** Adjust `../../scripts/` to the actual path of the script relative to your
+> current working directory. From a project at the workspace root, use `scripts/get-model-info.js`.
+
 This returns JSON with the `model` object containing:
 
 - **`ticket`** — the **embedding ticket** (for Viewer/browser use)
@@ -90,6 +99,11 @@ Use `ticket` + `modelViewUrl` for Viewer projects, `backendTicket` + `modelViewU
 It also includes all parameter/output/export details.
 Run with `--help` for full usage. Access keys are created at
 https://www.shapediver.com/app/settings/developers
+
+- [ ] **AppBuilder output check:** After running the script, confirm whether any output is
+      named "AppBuilder" (case-insensitive). If yes, **do not hand off to `shapediver-viewer`**
+      — redirect to `shapediver-appbuilder` unless the user explicitly requests a custom
+      integration and acknowledges the AppBuilder output.
 
 **Option 2 — Manual:** Collect these from the user directly:
 
