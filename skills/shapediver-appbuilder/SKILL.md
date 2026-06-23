@@ -40,6 +40,7 @@ confirm it directly. If ambiguous, ask.
 | **Iframe**      | 1/5           | Fastest path. Paste an iframe snippet, done.                      | `shapediver-appbuilder-iframe` |
 | **App Builder** | 2/5           | Use the App Builder directly, optionally with a custom theme.     | `shapediver-appbuilder-theme`  |
 | **Fork**        | 3/5           | Custom React components while keeping App Builder infrastructure. | `shapediver-appbuilder-fork`   |
+| **Settings JSON** | —           | Author/validate `themeOverrides` + `appBuilderOverride` in a fork. **Hand off runs Step 0:** if user did not provide slug or ticket+modelViewUrl, settings skill must ask for credentials before any JSON. | `shapediver-appbuilder-settings` |
 
 **Decision guide:**
 

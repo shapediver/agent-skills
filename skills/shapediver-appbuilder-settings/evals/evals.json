@@ -1,0 +1,174 @@
+{
+    "skill_name": "shapediver-appbuilder-settings",
+    "evals": [
+        {
+            "id": 1,
+            "name": "new-config-asks-credentials",
+            "prompt": "I'm forking the App Builder. Create a settings JSON file that only changes our primary brand color to a red palette. Don't change layout or add anything else.",
+            "expected_output": "Agent's ONLY first reply is the credential question — zero JSON, zero file paths, zero preview/server.",
+            "assertions": [
+                "First reply is ONLY a question asking for slug OR ticket and modelViewUrl",
+                "First reply contains zero JSON code blocks (no { \"version\" or themeOverrides)",
+                "First reply does NOT write or mention public/*.json file path as deliverable",
+                "First reply does NOT include npm run start or preview URL or ?g=",
+                "First reply references sessions block or Edit → Developers tab",
+                "Does NOT ship placeholder slug, ticket, or my-model-slug",
+                "Does NOT copy ticket or modelViewUrl from other public/*.json fixtures or examples",
+                "Does NOT invent or guess slug, ticket, or modelViewUrl",
+                "Does NOT include appBuilderOverride",
+                "Does NOT include forceColorScheme unless user explicitly asked for locked dark/light mode"
+            ]
+        },
+        {
+            "id": 2,
+            "name": "fix-unrecognized-key-validation-error",
+            "prompt": "My settings JSON fails validation: themeOverrides.components.Button.defaultProps — Unrecognized key: fontWeight. Fix the file.",
+            "expected_output": "Replace fontWeight with fw per definitions.ButtonProps in doc-flat.json; explain configPath themeOverrides.components.Button.defaultProps.",
+            "assertions": [
+                "Removes or renames fontWeight — doc-flat definitions.ButtonProps uses fw not fontWeight",
+                "References public/doc-flat.json or definitions.ButtonProps for allowed keys",
+                "Does NOT disable VITE_VALIDATE_SETTINGS or suggest turning validation off",
+                "Maps the error to configPath themeOverrides.components.Button.defaultProps",
+                "Does NOT add unrelated theme sections the user did not ask for"
+            ]
+        },
+        {
+            "id": 3,
+            "name": "recommend-appshell-bottom-bar",
+            "prompt": "We want the App Builder configurator with a full-width bottom bar for action buttons, appshell layout. What should go in our settings JSON?",
+            "expected_output": "Recommends AppBuilderTemplateSelector and AppBuilderAppShellTemplatePage via doc-flat configPaths; optionally nested containerThemeOverrides.",
+            "assertions": [
+                "References public/doc-flat.json entries or configPath for AppBuilderTemplateSelector (template appshell)",
+                "Includes AppBuilderAppShellTemplatePage with bottomFullWidth true",
+                "May mention containerThemeOverrides under AppBuilderContainerWrapper configPath",
+                "Does NOT recommend appBuilderOverride for a pure layout-shell theming request",
+                "Starts from version 1.0 and keeps the answer focused on layout theme keys"
+            ]
+        },
+        {
+            "id": 4,
+            "name": "appbuilder-override-sticky-tabs",
+            "prompt": "I need to test sticky tabs on the left panel locally without republishing my Grasshopper model. Parameter name is Width. Add a tooltip on the add-to-cart action.",
+            "expected_output": "Settings JSON with appBuilderOverride containing stickyTabs true, controls with parameter Width, and addToCart action with tooltip; may cite public/example-appBuilderOverride.json for structure.",
+            "assertions": [
+                "Includes appBuilderOverride with version 1.0 and containers array",
+                "Sets stickyTabs: true on a container",
+                "Includes a parameter control with name Width",
+                "Includes addToCart action definition with tooltip in props",
+                "May reference committed public/example-appBuilderOverride.json — does NOT reference public/SS-9065.json or other uncommitted public paths",
+                "Does NOT put API keys or tickets in the example unless user provided them"
+            ]
+        },
+        {
+            "id": 5,
+            "name": "reject-invalid-group-wrap",
+            "prompt": "Add wrap: flex to AppBuilderHorizontalContainer defaultProps in my theme JSON.",
+            "expected_output": "Refuse wrap: flex; cite MantineFlexWrap enum from doc-flat definitions for AppBuilderHorizontalContainer configPath.",
+            "assertions": [
+                "Does NOT output wrap: flex as a valid final answer",
+                "States allowed wrap values: nowrap, wrap, wrap-reverse (from doc-flat definitions.MantineFlexWrap or AppBuilderHorizontalContainer entry)",
+                "References configPath themeOverrides.components.AppBuilderHorizontalContainer.defaultProps or public/doc-flat.json",
+                "Offers a valid alternative (e.g. wrap: wrap) if flex-like behavior was intended",
+                "Does NOT invent property names outside doc-flat"
+            ]
+        },
+        {
+            "id": 6,
+            "name": "handoff-vs-theme-skill",
+            "prompt": "I just want to host a branded theme on shapediver.com with g= parameter, no fork. Primary color #953a61.",
+            "expected_output": "Hand off to shapediver-appbuilder-theme for g= delivery; still produce valid minimal theme JSON with version and primaryColor/colors.",
+            "assertions": [
+                "Mentions shapediver-appbuilder-theme or hosted g= URL workflow",
+                "Produces valid JSON with version 1.0 and the requested brand color",
+                "Does NOT require VITE_VALIDATE_SETTINGS or pnpm test as mandatory steps for hosted-only workflow",
+                "Includes HTTPS hosting note or warns against http://localhost for g= on shapediver.com",
+                "Keeps scope to branding only — no appBuilderOverride"
+            ]
+        },
+        {
+            "id": 7,
+            "name": "local-preview-url-slug-upfront",
+            "prompt": "Fork dev. Slug: office-chair. Create public/office-chair-theme.json with ViewportIcons AR disabled. Give me the link to preview.",
+            "expected_output": "sessions with slug, enableArBtn false, preview http://localhost:3000/?g=/office-chair-theme.json",
+            "assertions": [
+                "Includes sessions with slug office-chair",
+                "Preview URL is http://localhost:3000/?g=/office-chair-theme.json",
+                "Does NOT use localhost:5173 or ?settingsUrl= or /public/ in the g value",
+                "Sets enableArBtn false on ViewportIcons"
+            ]
+        },
+        {
+            "id": 8,
+            "name": "refuse-theme-only-without-sessions",
+            "prompt": "Add only primaryColor gray to theme JSON for g= on hosted App Builder. Slug office-chair. No sessions block in file. JSON will be at https://cdn.example.com/gray.json",
+            "expected_output": "Refuses theme-only file; adds sessions with slug office-chair; preview g-only on appbuilder.shapediver.com",
+            "assertions": [
+                "Does NOT deliver JSON without sessions block",
+                "Includes sessions with slug office-chair or asks user to confirm slug before final JSON",
+                "Preview URL is https://appbuilder.shapediver.com/v1/main/latest/?g=https://cdn.example.com/gray.json without slug on URL",
+                "Explains sessions is required in every settings file per this skill"
+            ]
+        },
+        {
+            "id": 9,
+            "name": "correct-wrong-public-path-preview",
+            "prompt": "Done, open http://localhost:3000/public/chair-brand.json to preview",
+            "expected_output": "Corrects to http://localhost:3000/?g=/chair-brand.json",
+            "assertions": [
+                "Corrects the user — do not open /public/ path directly",
+                "Gives preview URL with query param g=/chair-brand.json",
+                "Does NOT endorse ?settingsUrl="
+            ]
+        },
+        {
+            "id": 10,
+            "name": "minimal-red-brand-with-slug",
+            "prompt": "Fork dev. Slug: office-chair. Create public/chair-brand.json with red brand palette only — no layout changes. Give preview link.",
+            "expected_output": "Complete JSON with sessions, red 10-shade colors, preview http://localhost:3000/?g=/chair-brand.json",
+            "assertions": [
+                "Output includes version 1.0 and sessions with slug office-chair",
+                "Includes themeOverrides with primaryColor and a custom colors palette (10 shades) for red",
+                "Does NOT include appBuilderOverride",
+                "Preview URL uses query param g=/chair-brand.json on localhost:3000",
+                "Documents doc-flat cross-check OR runs pnpm run validate:settings on the delivered file when fork available"
+            ]
+        },
+        {
+            "id": 11,
+            "name": "hosted-sessions-in-json-g-only",
+            "prompt": "Host on shapediver.com, no fork. Slug: office-chair. Brand primary #953a61. JSON at https://cdn.example.com/configs/chair.json — include sessions in the file.",
+            "expected_output": "sessions in JSON; preview https://appbuilder.shapediver.com/v1/main/latest/?g=https://cdn.example.com/configs/chair.json without slug on URL",
+            "assertions": [
+                "Includes sessions with slug office-chair in JSON",
+                "Preview URL is https://appbuilder.shapediver.com/v1/main/latest/?g=https://cdn.example.com/configs/chair.json",
+                "Does NOT add slug= to preview URL when sessions are in JSON",
+                "Does NOT use localhost in hosted g value"
+            ]
+        },
+        {
+            "id": 12,
+            "name": "ticket-session-option-b",
+            "prompt": "Fork dev. Ticket: abc123ticket, modelViewUrl: https://sdr7euc1.eu-central-1.shapediver.com. Minimal gray primary only. File: gray-test.json",
+            "expected_output": "sessions with ticket+modelViewUrl, primaryColor gray, preview http://localhost:3000/?g=/gray-test.json",
+            "assertions": [
+                "sessions uses ticket and modelViewUrl from user message only — not slug, not copied from fixtures",
+                "Both ticket and modelViewUrl present in sessions entry",
+                "Preview URL is http://localhost:3000/?g=/gray-test.json",
+                "Does NOT put ticket or modelViewUrl on the preview URL query string"
+            ]
+        },
+        {
+            "id": 13,
+            "name": "no-borrow-sessions-from-other-fixture",
+            "prompt": "Create public/my-store.json with stack widget configured like example-ecommerce-2.json. Red primary brand color only.",
+            "expected_output": "First reply ONLY asks for slug or ticket+modelViewUrl — does NOT mention reusing sessions from example-ecommerce-2.json or search doc-flat/stack yet.",
+            "assertions": [
+                "First reply is ONLY the credential question",
+                "Does NOT say credentials or sessions already exist in example-ecommerce-2.json or any other fixture",
+                "Does NOT Grep or read doc-flat or stack widget config in first reply",
+                "Does NOT copy sessions from example-ecommerce-2.json or any other public/*.json",
+                "Does NOT ship JSON in first reply"
+            ]
+        }
+    ]
+}

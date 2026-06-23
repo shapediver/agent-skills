@@ -53,6 +53,8 @@ If a theme file will be used, append `&g=THEME_URL`:
 
 The `g` value can be a relative or absolute URL. When self-hosting the file, use an absolute URL.
 
+> **Settings JSON (`shapediver-appbuilder-settings`):** For hosted App Builder on shapediver.com, `g` must always be an **absolute HTTPS** URL to the JSON file — not `theme.json` or a relative path. See that skill's [preview-urls.md](../shapediver-appbuilder-settings/references/preview-urls.md).
+
 > **⚠ Mixed content:** Never use `http://localhost` as the `g=` value when the App Builder
 > is loaded from `https://`. Browsers block HTTP resources fetched by HTTPS pages — the
 > theme fetch will silently fail with "failed to fetch". For local testing, use
@@ -163,6 +165,8 @@ The final deliverable is the theme JSON file. Hand the user:
 
 - Theme customization is limited to visual branding (colors, fonts, logo, layout). It cannot
   add new UI components, custom panels, or backend integrations — use Fork for those.
+- For **strict JSON validation**, `doc-flat` property lookup, and `appBuilderOverride` in a fork, use
+  `shapediver-appbuilder-settings`.
 - The theme JSON file must follow the exact format documented in the
   [theming docs](https://help.shapediver.com/doc/customize-a-theme). Invalid keys are
   silently ignored.
