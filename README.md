@@ -52,6 +52,7 @@ Common skill directory locations:
 | [`shapediver-appbuilder-settings`](skills/shapediver-appbuilder-settings/SKILL.md) | Author and validate settings JSON using fork `public/doc-flat.json` configPath catalog. |
 | [`shapediver-appbuilder-fork`](skills/shapediver-appbuilder-fork/SKILL.md)     | Fork the open-source App Builder React app for custom components.                                 |
 | [`shapediver-headless`](skills/shapediver-headless/SKILL.md)                   | Headless/server-side integration via the Geometry SDK.                                            |
+| [`shapediver-sentry-user-feedback`](skills/shapediver-sentry-user-feedback/SKILL.md) | Collect sanitized debug context from a frustrated debugging session and route to Sentry.          |
 
 ## Structure
 
@@ -96,7 +97,9 @@ skills/
 │       └── evals.json
 ├── shapediver-appbuilder-fork/
 │   └── SKILL.md
-└── shapediver-headless/
+├── shapediver-headless/
+│   └── SKILL.md
+└── shapediver-sentry-user-feedback/
     └── SKILL.md
 ```
 

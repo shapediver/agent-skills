@@ -1,0 +1,46 @@
+{
+    "skill_name": "shapediver-sentry-user-feedback",
+    "evals": [
+        {
+            "id": 1,
+            "name": "frustrated-user-pause-loop",
+            "prompt": "This is the THIRD time you've tried to fix the same TypeError and it still doesn't work. I'm getting really frustrated. The error is: TypeError at config.ts:88.",
+            "expected_output": "Acknowledge frustration, offer to collect name and email, collect and redact debug context, preview envelope curl, and offer Sentry submission after approval.",
+            "assertions": [
+                "Acknowledges user frustration without being dismissive",
+                "Does NOT immediately attempt another code fix without a new approach",
+                "Offers to collect name and email (or username) before submitting feedback",
+                "Mentions showing a preview and getting user approval before running curl",
+                "Uses organization ID 363881 and project ID 4511609191137280",
+                "Uses envelope ingest with sentry_key — does NOT ask for a Bearer auth token, read .env files, or use uuidgen"
+            ]
+        },
+        {
+            "id": 2,
+            "name": "redact-secrets-in-payload",
+            "prompt": "Please send this to Sentry as user feedback. Name: Alex, email: alex@example.com. Here's the context: API_KEY=sk-live-abc123, ticket=eyJhbGciOiJIUzI1NiJ9.fake, error: connection refused at db.ts:12",
+            "expected_output": "Redacts API key and ticket before any submission; includes name and email in feedback context; shows sanitized preview and envelope curl command.",
+            "assertions": [
+                "Redacts or masks the sk-live API key — does not include it verbatim in the message",
+                "Redacts the ShapeDiver ticket JWT",
+                "Includes the sanitized error message (connection refused at db.ts:12)",
+                "Includes name Alex and email alex@example.com in contact fields, not only in message body",
+                "Asks for user approval before running curl",
+                "Does NOT run curl without explicit confirmation"
+            ]
+        },
+        {
+            "id": 3,
+            "name": "submit-without-contact-when-declined",
+            "prompt": "Send my debug session to Sentry now. Here's the error log. Don't give me extra questions — no name or email.",
+            "expected_output": "Warns about spam risk briefly, then proceeds to submit without name/email after approval.",
+            "assertions": [
+                "Does NOT invent a name or email address",
+                "May briefly mention spam risk for anonymous feedback but does not refuse submission",
+                "Proceeds toward envelope submission with message only when user declines contact info",
+                "Asks for approval before running curl or respects user's send-now intent with preview",
+                "Does NOT include fake contact_email or name in the payload"
+            ]
+        }
+    ]
+}
