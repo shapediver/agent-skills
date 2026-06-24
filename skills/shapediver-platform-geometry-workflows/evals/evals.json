@@ -1,0 +1,43 @@
+{
+  "skill_name": "shapediver-platform-geometry-workflows",
+  "evals": [
+    {
+      "id": 1,
+      "name": "slug-to-export-workflow",
+      "prompt": "I have a ShapeDiver model slug and Platform API access keys. I want to compute an export from that model in a backend script.",
+      "expected_output": "A response that identifies this as a PB+GB workflow, resolves the need for PB model lookup plus token/ticket issuance first, then routes into the Geometry-side runtime flow with the correct ticket/modelViewUrl/JWT guidance.",
+      "assertions": [
+        "Identifies the task as combined Platform Backend plus Geometry Backend work.",
+        "States that PB is used first to resolve the model and mint the runtime credentials.",
+        "Chooses backend ticket rather than embedding ticket for server-side work.",
+        "Mentions the need for modelViewUrl plus the correct JWT scopes before GB runtime work.",
+        "Distinguishes PB model id from GB guid.",
+        "Routes to the Geometry specialist references for the actual runtime code."
+      ]
+    },
+    {
+      "id": 2,
+      "name": "upload-and-publish",
+      "prompt": "Programmatically upload a Grasshopper file to ShapeDiver, wait for the Geometry Backend check, and publish the model once confirmed.",
+      "expected_output": "A response that identifies the create/upload/check/publish lifecycle as PB+GB, with PB create and publish steps around GB upload and polling.",
+      "assertions": [
+        "Does not classify the workflow as PB-only.",
+        "Explains that PB creates the model and later patches/publishes it.",
+        "Explains that GB handles the upload and model-status polling/check.",
+        "Mentions owner/view token scope requirements for the upload side.",
+        "Keeps the PB and GB responsibilities distinct."
+      ]
+    },
+    {
+      "id": 3,
+      "name": "gb-only-credentials-already-known",
+      "prompt": "I already have modelViewUrl, backend ticket, and the parameter IDs. I just need Node.js code to compute outputs.",
+      "expected_output": "A response that says this is GB-only and routes to shapediver-geometry-backend instead of keeping the workflow in the PB+GB skill.",
+      "assertions": [
+        "Identifies that PB resolution is no longer needed.",
+        "Routes to shapediver-geometry-backend.",
+        "Does not insist on extra PB token retrieval when the task is already GB-only."
+      ]
+    }
+  ]
+}

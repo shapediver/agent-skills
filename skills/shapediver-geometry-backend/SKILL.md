@@ -32,6 +32,10 @@ without the ShapeDiver Viewer. Use one SDK based on the user's language:
 Use direct REST or raw OpenAPI details only when the user explicitly asks for endpoint
 details, the SDK lacks a needed operation, or you must verify a generated method/schema.
 
+If the request starts from a model slug/id/guid or Platform credentials and the
+`modelViewUrl`, backend ticket/JWT, or canonical model ids still need to be resolved first,
+load `shapediver-platform-geometry-workflows` before generating Geometry code.
+
 ## Reference Loading
 
 - Read [references/sdk-typescript.md](references/sdk-typescript.md) for Node.js,
@@ -52,17 +56,21 @@ details, the SDK lacks a needed operation, or you must verify a generated method
 1. Determine the target language and SDK. If no language is given, ask only if the code
    must be generated now; otherwise explain the three supported SDK choices briefly.
 2. Load the matching SDK reference. Do not mix SDK styles across languages.
-3. Collect `modelViewUrl`, backend ticket, optional JWT, and current model metadata
+3. Confirm that the request is truly GB-only:
+   - if `modelViewUrl`, backend ticket/JWT, or runtime metadata must still be resolved from
+     Platform, route to `shapediver-platform-geometry-workflows` first,
+   - otherwise continue here.
+4. Collect `modelViewUrl`, backend ticket, optional JWT, and current model metadata
    (`parameters`, `outputs`, `exports`). Prefer backend tickets for server-side SDK use.
-4. Initialize the SDK with the model's actual `modelViewUrl`. Never rely on SDK defaults
+5. Initialize the SDK with the model's actual `modelViewUrl`. Never rely on SDK defaults
    or hardcoded shared backend URLs.
-5. Create a session, read metadata from the session response, and reuse that session for
+6. Create a session, read metadata from the session response, and reuse that session for
    all related SDK operations in the workflow. Do not open and close a new session for each
    SDK call unless the task truly needs isolated sessions.
-6. Use SDK polling/helpers where available. When not available, handle delayed results
+7. Use SDK polling/helpers where available. When not available, handle delayed results
    according to SDK response fields and verify the operation against the OpenAPI spec only
    if needed.
-7. Close the session after the last client operation that needs it. Review the code against
+8. Close the session after the last client operation that needs it. Review the code against
    the SDK reference before responding.
 
 ## Credentials And Metadata

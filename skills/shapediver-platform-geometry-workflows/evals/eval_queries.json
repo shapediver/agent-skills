@@ -1,0 +1,30 @@
+[
+  {
+    "query": "given a ShapeDiver model slug and Platform API access keys, get the parameters and then compute an export",
+    "should_trigger": true
+  },
+  {
+    "query": "upload a Grasshopper model to ShapeDiver and publish it once the Geometry Backend check passes",
+    "should_trigger": true
+  },
+  {
+    "query": "request a GB analytics token from ShapeDiver Platform and fetch model runtime statistics",
+    "should_trigger": true
+  },
+  {
+    "query": "I only need to authenticate to the ShapeDiver Platform Backend and list models",
+    "should_trigger": false
+  },
+  {
+    "query": "I already have modelViewUrl and a backend ticket, write Node.js Geometry SDK code to compute outputs",
+    "should_trigger": false
+  },
+  {
+    "query": "build a browser configurator with the ShapeDiver Viewer API",
+    "should_trigger": false
+  },
+  {
+    "query": "embed ShapeDiver using the App Builder iframe",
+    "should_trigger": false
+  }
+]

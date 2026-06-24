@@ -34,8 +34,11 @@ Grasshopper advice.
   file parameters here.
 - Do not add a browser canvas, Viewer API integration, iframe snippet, theme setup, or
   App Builder fork workflow.
-- If the user needs to run a model, compute data, or generate exports, route to
-  `shapediver-geometry-backend`.
+- If the user needs to run a model, compute data, generate exports, upload/publish a model,
+  or query GB runtime analytics and the task still starts from Platform-side resolution,
+  route to `shapediver-platform-geometry-workflows`.
+- If the user already has `modelViewUrl` plus backend ticket/JWT and only needs pure GB
+  runtime code, route to `shapediver-geometry-backend`.
 - If the user needs a browser configurator or direct embedding UI, route to
   `shapediver-viewer` or the relevant `shapediver-appbuilder*` skill.
 
@@ -68,9 +71,15 @@ Grasshopper advice.
    states, API tokens, API clients, sharing, secrets, logs, analytics, or webhook-facing
    endpoints.
 6. Use embeds deliberately when related model data or credentials are needed.
-7. Keep Geometry Backend tickets or JWTs as outputs of a Platform workflow. Do not use
+7. Decide whether the task ends at PB or continues into GB:
+   - if it ends at PB, stay here,
+   - if it continues into runtime work and PB still has to resolve the bridge values,
+     load `shapediver-platform-geometry-workflows`,
+   - if the user already has explicit GB runtime credentials and only needs GB code, route
+     to `shapediver-geometry-backend`.
+8. Keep Geometry Backend tickets or JWTs as outputs of a Platform workflow. Do not use
    them inside this skill to run Geometry Backend sessions or computations.
-8. Review the final answer against the exit criteria below before responding.
+9. Review the final answer against the exit criteria below before responding.
 
 ## Credentials And Safety
 
