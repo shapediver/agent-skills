@@ -5,10 +5,10 @@
             "id": 1,
             "name": "strategy-selection-undecided",
             "prompt": "I have a Grasshopper model on ShapeDiver and I want to build a web configurator for my furniture product. I'm not sure which approach to use.",
-            "expected_output": "A clear explanation of the available integration strategies (App Builder, Viewer API, Headless) with guidance to help the user choose.",
+            "expected_output": "A clear explanation of the available integration strategies (App Builder, Viewer API, Platform Backend, Geometry Backend, and combined Platform+Geometry workflows) with guidance to help the user choose.",
             "assertions": [
-                "Presents at least three integration options: App Builder, Viewer 3 API, and Geometry SDK/Headless",
-                "Explains when to use each option (App Builder for ready-made UI, Viewer for custom control, Headless for backend)",
+                "Presents at least three relevant integration options including App Builder and Viewer 3 API, plus the appropriate backend path.",
+                "Explains when to use Platform Backend, Geometry Backend, or the combined PB+GB workflow for backend tasks.",
                 "Asks clarifying questions to determine the user's needs before recommending a specific path",
                 "Does NOT immediately start writing code without choosing a strategy first"
             ]
@@ -35,6 +35,30 @@
                 "Asks for ticket and modelViewUrl, or offers the API script as an alternative",
                 "Mentions reading the shapediver-viewer skill before writing code",
                 "Does NOT start writing Viewer API code without first collecting credentials"
+            ]
+        },
+        {
+            "id": 4,
+            "name": "route-to-platform-backend",
+            "prompt": "I need to authenticate to the ShapeDiver Platform Backend and add a new embedding domain for one of my models.",
+            "expected_output": "Routes the user to the Platform Backend path, not to Viewer, App Builder, or Geometry runtime.",
+            "assertions": [
+                "Classifies the task as Platform Backend work.",
+                "Requests Platform auth context rather than backend ticket/modelViewUrl.",
+                "Mentions reading the shapediver-platform-backend skill.",
+                "Does NOT route to Geometry Backend or PB+GB workflow skills."
+            ]
+        },
+        {
+            "id": 5,
+            "name": "route-to-pb-gb-workflow",
+            "prompt": "I have a ShapeDiver model slug and Platform API access keys. I want to inspect the parameters and then generate an export in a backend script.",
+            "expected_output": "Routes the user to the combined Platform + Geometry workflow path because the task starts from Platform-side resolution and ends in Geometry runtime work.",
+            "assertions": [
+                "Classifies the task as a combined PB+GB workflow.",
+                "Does NOT route directly to shapediver-geometry-backend.",
+                "Mentions reading shapediver-platform-geometry-workflows.",
+                "Explains that PB resolves credentials before GB runtime execution."
             ]
         }
     ]
