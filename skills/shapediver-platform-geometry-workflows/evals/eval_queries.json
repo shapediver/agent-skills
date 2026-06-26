@@ -12,6 +12,10 @@
     "should_trigger": true
   },
   {
+    "query": "I have a ShapeDiver model slug and need a browser embedding ticket plus strong authorization token",
+    "should_trigger": true
+  },
+  {
     "query": "I only need to authenticate to the ShapeDiver Platform Backend and list models",
     "should_trigger": false
   },

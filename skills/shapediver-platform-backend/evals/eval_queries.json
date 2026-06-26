@@ -32,6 +32,10 @@
     "should_trigger": true
   },
   {
+    "query": "given a ShapeDiver model slug and access keys, get a backend ticket and then compute an export",
+    "should_trigger": false
+  },
+  {
     "query": "compute ShapeDiver outputs with @shapediver/sdk.geometry-api-sdk-v2",
     "should_trigger": false
   },

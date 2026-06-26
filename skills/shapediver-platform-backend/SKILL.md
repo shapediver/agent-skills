@@ -20,85 +20,210 @@ license: MIT
 > `shapediver-router` first. It selects the correct integration strategy and
 > gathers required credentials before any implementation skill is read.
 
-This skill is for ShapeDiver Platform Backend management and authorization work only.
-Generate Platform SDK code, Platform REST/cURL examples, or conceptual guidance. Do not
-turn this into Geometry Backend computation code, Viewer code, App Builder code, or
-Grasshopper advice.
+This is the Platform Backend implementation skill. Use it to generate correct Platform SDK
+or REST code for auth, models, domains, saved states, sharing, tokens, analytics, and
+other PB resources.
 
-## Scope Discipline
+## Scope And Non-Goals
 
-- Stay on the Platform Backend side: authentication, users, organizations, models,
-  domains, sharing, saved states, API clients, API tokens, secrets, analytics, logs, and
-  Geometry Backend token/ticket retrieval.
-- Do not create Geometry Backend sessions, compute outputs, compute exports, or upload
-  file parameters here.
-- Do not add a browser canvas, Viewer API integration, iframe snippet, theme setup, or
-  App Builder fork workflow.
-- If the user needs to run a model, compute data, generate exports, upload/publish a model,
-  or query GB runtime analytics and the task still starts from Platform-side resolution,
-  route to `shapediver-platform-geometry-workflows`.
-- If the user already has `modelViewUrl` plus backend ticket/JWT and only needs pure GB
-  runtime code, route to `shapediver-geometry-backend`.
-- If the user needs a browser configurator or direct embedding UI, route to
-  `shapediver-viewer` or the relevant `shapediver-appbuilder*` skill.
+Stay on the PB side:
+
+- authentication,
+- models and model metadata,
+- domains,
+- saved states,
+- sharing,
+- API clients and API tokens,
+- secrets,
+- logs and analytics,
+- ticket or JWT issuance for downstream GB use.
+
+Do not use this skill for GB session creation, output/export computation, GB file uploads,
+browser Viewer/App Builder code, or Grasshopper authoring.
+
+Routing rules:
+
+- PB resolution plus GB runtime: `shapediver-platform-geometry-workflows`
+- already has `modelViewUrl` plus backend ticket/JWT: `shapediver-geometry-backend`
+- browser UI or embedding implementation: `shapediver-viewer` or `shapediver-appbuilder*`
+
+## Canonical Package, Import, And Client Rules
+
+Preferred SDK package:
+
+- `@shapediver/sdk.platform-api-sdk-v1`
+
+Install:
+
+```bash
+npm i @shapediver/sdk.platform-api-sdk-v1
+```
+
+Canonical imports:
+
+```ts
+import { create, SdPlatformSortingOrder, SdPlatformModelGetEmbeddableFields, SdPlatformModelQueryEmbeddableFields, SdPlatformModelTokenScopes, isPBValidationResponseError, isPBForbiddenResponseError, isPBOAuthResponseError } from "@shapediver/sdk.platform-api-sdk-v1";
+```
+
+Canonical client construction:
+
+```ts
+const client = create({
+  clientId: process.env.SHAPEDIVER_CLIENT_ID!,
+  clientSecret: process.env.SHAPEDIVER_CLIENT_SECRET ?? undefined,
+  baseUrl: process.env.SHAPEDIVER_PLATFORM_URL ?? "https://app.shapediver.com",
+});
+```
+
+Rules:
+
+- The `v1` suffix is part of the package name: `@shapediver/sdk.platform-api-sdk-v1`.
+- Prefer the latest available Platform SDK package version. Do not downgrade or omit the
+  versioned package name unless the user explicitly requires an older package.
+- Pass the Platform root as `baseUrl`. Do not append `/api/v1`.
+- Do not invent alternate package names, manual axios wrappers, or fake SDK methods.
+- Prefer SDK code for TypeScript/JavaScript unless the user explicitly asks for raw REST or
+  uses a different language.
+
+## Canonical Authentication Pattern
+
+Authenticate before protected resource calls.
+
+Preferred machine/server auth:
+
+```ts
+await client.authorization.passwordGrant(process.env.SHAPEDIVER_ACCESS_KEY_ID!, process.env.SHAPEDIVER_ACCESS_KEY_SECRET!);
+```
+
+Rules:
+
+- Treat the access key ID as the SDK `username`.
+- Treat the access key secret as the SDK `password`.
+- Use refresh-token or authorization-code flows only when the user's application actually
+  needs them.
+- Keep access key secrets, client secrets, refresh tokens, bearer tokens, tickets, and GB
+  JWTs server-side.
+- Distinguish Platform bearer tokens from Geometry credentials. They are not
+  interchangeable.
+
+## Canonical Request And Response Pattern
+
+SDK responses are wrapped. Read data from the correct container:
+
+- `getResponse.data`
+- `queryResponse.data.result`
+- `queryResponse.data.pagination.next_offset`
+
+Canonical query example:
+
+```ts
+const models = await client.models.query({
+  filters: { "deleted_at[?]": null, "status[,]": ["done"] },
+  sorters: { created_at: SdPlatformSortingOrder.Desc },
+  limit: 20,
+  strict_limit: true,
+  offset: null,
+  embed: [SdPlatformModelQueryEmbeddableFields.BackendSystem],
+});
+for (const model of models.data.result) console.log(model.id, model.title);
+const nextOffset = models.data.pagination?.next_offset ?? null;
+```
+
+Use resource-specific embed enums when available. Treat `next_offset` as an opaque cursor.
+
+## Canonical High-Value Resource Patterns
+
+Model read with embeds:
+
+```ts
+const model = await client.models.get("MODEL_ID_OR_SLUG", [
+  SdPlatformModelGetEmbeddableFields.BackendSystem,
+  SdPlatformModelGetEmbeddableFields.Accessdomains,
+  SdPlatformModelGetEmbeddableFields.BackendTicket,
+]);
+```
+
+GB JWT/model token request:
+
+```ts
+const token = await client.modelTokens.create({
+  id: "PLATFORM_MODEL_ID",
+  scope: [SdPlatformModelTokenScopes.GroupView],
+  lifetime: 3600,
+});
+console.log(token.data.access_token, token.data.model_view_url);
+```
+
+Geometry credential rules:
+
+- `ticket` and `backend_ticket` are the normal credentials for creating new GB sessions.
+- These tickets are generated by PB and only become usable after the model exists and its
+  Grasshopper file has been uploaded and checked successfully.
+- Avoid `author_ticket` by default; use it only when the workflow explicitly needs elevated
+  authoring access.
+- GB tokens/JWTs are typically used either before a session exists, for example in model
+  creation or upload/check workflows, or together with a session flow when the model's
+  `require_token` property is enabled.
+
+Domain query/create pattern:
+
+```ts
+const domains = await client.domains.query({ filters: { "name[:]": "localhost:3000" }, limit: 5 });
+if (domains.data.result.length === 0) await client.domains.create({ name: "localhost:3000" });
+```
+
+API token creation rule:
+
+- `key_secret` is returned only once. Surface that clearly.
+
+## Canonical REST Rules
+
+Use raw REST only when requested or when working outside the supported SDK.
+
+REST base paths:
+
+- OAuth: `{platformRoot}/oauth/...`
+- Platform resources: `{platformRoot}/api/v1/...`
+- Webhooks: `{platformRoot}/webhook/v1/...`
+
+Protected REST requests normally need both:
+
+- `Authorization: Bearer <platform-access-token>`
+- `X-ShapeDiver-Client: <client-id>`
 
 ## Reference Loading
 
-- Read [references/platform-backend-concepts.md](references/platform-backend-concepts.md)
-  for architecture, auth model, resource boundaries, model developer settings, sharing,
-  domains, saved states, tokens, and Platform vs Geometry Backend behavior.
 - Read [references/sdk-typescript.md](references/sdk-typescript.md) for TypeScript,
-  JavaScript, Node.js, or `@shapediver/sdk.platform-api-sdk-v1` code.
+  JavaScript, Node.js, `create({ ... })`, auth flows, and wrapped response access.
+- Read [references/auth-and-credentials.md](references/auth-and-credentials.md) for access
+  keys, client IDs, base URLs, protected headers, and Platform-vs-Geometry credential
+  boundaries.
+- Read [references/pagination-and-queries.md](references/pagination-and-queries.md) for
+  filters, embeds, sorting, query pagination, and query-loop patterns.
 - Read [references/rest-api-patterns.md](references/rest-api-patterns.md) for cURL, raw
-  REST, OAuth requests, protected headers, `/api/v1/...` resources, and non-SDK language
-  patterns.
-- Read [references/openapi-on-demand.md](references/openapi-on-demand.md) only when the
-  compact references are not enough: endpoint/schema verification, enum names, unusual
-  fields, webhook shapes, or rarely used SDK/resource methods.
+  REST, OAuth requests, and non-SDK language patterns.
+- Read [references/platform-backend-concepts.md](references/platform-backend-concepts.md)
+  for deeper control-plane concepts, model settings, sharing, and PB-vs-GB behavior.
+- Read [references/openapi-on-demand.md](references/openapi-on-demand.md) only for
+  endpoint/schema verification, enum confirmation, or rarely used resources.
 
-## Workflow
+## Safety Rules
 
-1. Determine whether the user wants SDK code, raw REST/cURL, or conceptual help.
-2. Determine the Platform root URL. Default to `https://app.shapediver.com` only when the
-   user did not provide an enterprise or dedicated deployment URL.
-3. Collect the auth path:
-   - Prefer Platform API access key ID + secret for machine/server automation.
-   - Use OAuth client ID and optional client secret when the flow requires it.
-   - Treat bearer tokens, refresh tokens, access key secrets, client secrets, tickets,
-     and Geometry Backend JWTs as secrets.
-4. Authenticate before protected Platform calls.
-5. Use the requested Platform resource area: models, users, organizations, domains, saved
-   states, API tokens, API clients, sharing, secrets, logs, analytics, or webhook-facing
-   endpoints.
-6. Use embeds deliberately when related model data or credentials are needed.
-7. Decide whether the task ends at PB or continues into GB:
-   - if it ends at PB, stay here,
-   - if it continues into runtime work and PB still has to resolve the bridge values,
-     load `shapediver-platform-geometry-workflows`,
-   - if the user already has explicit GB runtime credentials and only needs GB code, route
-     to `shapediver-geometry-backend`.
-8. Keep Geometry Backend tickets or JWTs as outputs of a Platform workflow. Do not use
-   them inside this skill to run Geometry Backend sessions or computations.
-9. Review the final answer against the exit criteria below before responding.
-
-## Credentials And Safety
-
-- Never expose Platform API access key secrets, OAuth client secrets, refresh tokens,
-  Platform bearer tokens, Geometry Backend tickets, or Geometry Backend JWTs in browser UI
-  or client-side examples.
-- Do not create, revoke, patch, delete, transfer, or share real Platform resources unless
-  the user explicitly asked for that operation and provided the needed context.
-- For destructive or account-changing operations, prefer generating clear code or cURL and
-  explain the effect instead of executing it automatically.
-- Do not invent user IDs, organization IDs, model IDs, slugs, tags, domains, token
-  scopes, enum names, or ticket values.
+- Never expose access key secrets, client secrets, refresh tokens, Platform bearer tokens,
+  backend tickets, or GB JWTs in browser code.
+- Do not invent model IDs, slugs, domains, scopes, enum names, or token values.
+- Prefer generating code or cURL for destructive PB operations instead of executing them
+  automatically.
+- Keep Geometry tickets and JWTs as outputs of PB workflows. Do not use them here to run
+  GB sessions.
+- Do not imply that `author_ticket` is the default or preferred GB credential.
 
 ## Placeholders
 
-Use clear placeholders when the user has not supplied concrete values:
+Use clear placeholders when values are missing:
 
-| Value                 | Placeholder                    |
-| --------------------- | ------------------------------ |
+| Value | Placeholder |
+| --- | --- |
 | OAuth client ID       | `SHAPEDIVER_CLIENT_ID`         |
 | OAuth client secret   | `SHAPEDIVER_CLIENT_SECRET`     |
 | Access key ID         | `SHAPEDIVER_ACCESS_KEY_ID`     |
@@ -121,23 +246,17 @@ values:
 node scripts/get-model-info.js <accessKeyId> <accessKeySecret> <slug>
 ```
 
-Use this only for model metadata retrieval workflows. It is not a general Platform Backend
-client and it should not be presented as one.
+Use this only for model metadata retrieval workflows. It is not a general PB client.
 
 ## Exit Criteria
 
-- SDK examples use `@shapediver/sdk.platform-api-sdk-v1` and pass the Platform root as
-  `baseUrl`, not `/api/v1`.
-- REST examples use the correct base paths:
-  - OAuth: `{platformRoot}/oauth/...`
-  - Platform resources: `{platformRoot}/api/v1/...`
-  - Webhooks: `{platformRoot}/webhook/v1/...`
-- Protected REST examples include both `Authorization: Bearer ...` and
-  `X-ShapeDiver-Client: ...` unless the endpoint is explicitly public.
-- SDK examples authenticate with `authorization.passwordGrant(...)`,
-  `authorization.refreshToken(...)`, or the authorization-code methods before protected
-  calls.
-- Model/token examples clearly distinguish Platform bearer tokens, Geometry Backend
-  tickets, and Geometry Backend JWTs.
-- Query examples handle pagination and `next_offset` defensively.
-- API token creation examples warn that `key_secret` is returned only once.
+- SDK examples use `@shapediver/sdk.platform-api-sdk-v1`, `create({ ... })`, and the
+  correct Platform root as `baseUrl`.
+- Protected SDK examples authenticate before calling protected resources.
+- REST examples use the correct PB base paths and protected-header rules.
+- Response access uses wrapped SDK shapes correctly, including `data.result` and
+  `pagination.next_offset`.
+- Token/ticket examples clearly distinguish Platform bearer tokens from GB tickets/JWTs.
+- Query examples use resource-specific embeds and treat pagination defensively.
+- Any request that continues into GB runtime work is routed to
+  `shapediver-platform-geometry-workflows` or `shapediver-geometry-backend` as appropriate.

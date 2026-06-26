@@ -40,6 +40,10 @@
     "should_trigger": true
   },
   {
+    "query": "I only have a ShapeDiver model slug and Platform API access keys, write Geometry Backend SDK code to compute outputs",
+    "should_trigger": false
+  },
+  {
     "query": "I need to display a ShapeDiver 3D model in the browser with a canvas",
     "should_trigger": false
   },

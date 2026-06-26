@@ -214,6 +214,12 @@ a Platform bearer token.
 Use a real Platform model ID here; this token request is more specific than
 `client.models.get(...)`, which can often accept slug/id/guid.
 
+For model upload/check/publish workflows, request model-management scopes such as
+`GroupOwner` + `GroupView` and then continue in
+`shapediver-platform-geometry-workflows`; do not keep that workflow inside the PB-only
+skill. The create-and-upload path is token/guid-based model management, not a normal
+ticket/session compute flow.
+
 ### Query Or Create A Domain
 
 ```ts

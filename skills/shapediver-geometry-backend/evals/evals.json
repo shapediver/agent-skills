@@ -5,14 +5,18 @@
       "id": 1,
       "name": "typescript-sdk-export",
       "prompt": "Write a Node.js TypeScript example using @shapediver/sdk.geometry-api-sdk-v2 to create a ShapeDiver backend session and compute export ID export_stl with parameter width_param=120.",
-      "expected_output": "A TypeScript SDK example using Configuration, SessionApi, ExportApi or UtilsApi, a backend ticket/modelViewUrl, the provided parameter and export IDs, session reuse for related calls, and a close-session cleanup path.",
+      "expected_output": "A TypeScript SDK example using @shapediver/sdk.geometry-api-sdk-v2 with Configuration, SessionApi, ExportApi or UtilsApi, backendTicket plus modelViewUrl placeholders, wrapped .data access, the provided IDs only, session reuse, and explicit close-session cleanup.",
       "assertions": [
         "Uses @shapediver/sdk.geometry-api-sdk-v2 rather than raw cURL/REST.",
+        "Imports or uses Configuration and SessionApi plus ExportApi or UtilsApi.",
         "Configures Configuration with the user's modelViewUrl placeholder or provided value.",
+        "Does not hardcode a shared ShapeDiver backend host instead of the modelViewUrl.",
         "Uses createSessionByTicket, reuses the session for related operations, and closes the session in finally.",
+        "Reads the SDK response DTO from .data.",
         "Uses exports as an array containing export_stl.",
         "Uses only width_param as the parameter ID and does not invent model-specific IDs.",
-        "Treats metadata/response sections as potentially permission-gated."
+        "Treats metadata/response sections as potentially permission-gated.",
+        "Surfaces SDK-specific error details or uses processError/ResponseError rather than hiding the failure behind a generic catch block."
       ]
     },
     {
@@ -67,6 +71,18 @@
         "Mentions operation ID to SDK method mapping by language convention.",
         "Says to prefer installed SDK generated types/tests for exact signatures.",
         "Does not paste a large endpoint reference into the response."
+      ]
+    },
+    {
+      "id": 6,
+      "name": "missing-pb-prerequisites",
+      "prompt": "Write Geometry Backend SDK code to compute outputs for my ShapeDiver model. I only have the model slug and Platform API access key credentials.",
+      "expected_output": "A boundary-aware answer that explains Geometry Backend SDK code cannot start yet because modelViewUrl and backend runtime credentials still need to be resolved from Platform inputs first, and routes the task to shapediver-platform-geometry-workflows.",
+      "assertions": [
+        "Explains that modelViewUrl and backend ticket or JWT are still missing.",
+        "Routes the request to shapediver-platform-geometry-workflows before generating GB runtime code.",
+        "Does not invent a backend host, ticket, JWT, parameter IDs, or output IDs.",
+        "Does not pretend the Geometry SDK alone can resolve a slug through Platform."
       ]
     }
   ]

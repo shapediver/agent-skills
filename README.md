@@ -111,9 +111,11 @@ skills/
 │       └── openapi-on-demand.md
 └── shapediver-platform-geometry-workflows/
     ├── SKILL.md
-    └── evals/
-        ├── evals.json
-        └── eval_queries.json
+    ├── evals/
+    │   ├── evals.json
+    │   └── eval_queries.json
+    └── references/
+        └── workflow-orchestration.md
 ```
 
 Each skill follows the [Agent Skills specification](https://agentskills.io/specification) — a folder containing a `SKILL.md` file with YAML frontmatter (`name`, `description`) and Markdown instructions.
