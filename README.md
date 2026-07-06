@@ -50,7 +50,9 @@ Common skill directory locations:
 | [`shapediver-appbuilder-iframe`](skills/shapediver-appbuilder-iframe/SKILL.md) | App Builder iframe embedding — fastest path, zero code.                                           |
 | [`shapediver-appbuilder-theme`](skills/shapediver-appbuilder-theme/SKILL.md)   | App Builder with optional custom theme (colors, fonts, logo).                                     |
 | [`shapediver-appbuilder-fork`](skills/shapediver-appbuilder-fork/SKILL.md)     | Fork the open-source App Builder React app for custom components.                                 |
-| [`shapediver-headless`](skills/shapediver-headless/SKILL.md)                   | Headless/server-side integration via the Geometry SDK.                                            |
+| [`shapediver-platform-backend`](skills/shapediver-platform-backend/SKILL.md)   | Platform Backend API/SDK: authentication, models, users, organizations, domains, saved states, API tokens, sharing, and Geometry Backend token requests. |
+| [`shapediver-geometry-backend`](skills/shapediver-geometry-backend/SKILL.md)   | Geometry Backend SDKs for TypeScript, Python, and PHP: sessions, outputs, exports, file parameters, tickets/JWTs, and modelViewUrl. |
+| [`shapediver-platform-geometry-workflows`](skills/shapediver-platform-geometry-workflows/SKILL.md) | Combined Platform Backend + Geometry Backend orchestration: slug/id/account credentials to runtime metadata, compute/export, upload/publish, and GB analytics flows. |
 
 ## Structure
 
@@ -86,8 +88,34 @@ skills/
 │   └── SKILL.md
 ├── shapediver-appbuilder-fork/
 │   └── SKILL.md
-└── shapediver-headless/
-    └── SKILL.md
+├── shapediver-platform-backend/
+│   ├── SKILL.md
+│   ├── evals/
+│   │   ├── evals.json
+│   │   └── eval_queries.json
+│   └── references/
+│       ├── platform-backend-concepts.md
+│       ├── sdk-typescript.md
+│       ├── rest-api-patterns.md
+│       └── openapi-on-demand.md
+├── shapediver-geometry-backend/
+│   ├── SKILL.md
+│   ├── evals/
+│   │   ├── evals.json
+│   │   └── eval_queries.json
+│   └── references/
+│       ├── sdk-typescript.md
+│       ├── sdk-python.md
+│       ├── sdk-php.md
+│       ├── geometry-backend-concepts.md
+│       └── openapi-on-demand.md
+└── shapediver-platform-geometry-workflows/
+    ├── SKILL.md
+    ├── evals/
+    │   ├── evals.json
+    │   └── eval_queries.json
+    └── references/
+        └── workflow-orchestration.md
 ```
 
 Each skill follows the [Agent Skills specification](https://agentskills.io/specification) — a folder containing a `SKILL.md` file with YAML frontmatter (`name`, `description`) and Markdown instructions.

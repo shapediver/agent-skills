@@ -1,0 +1,59 @@
+{
+  "skill_name": "shapediver-platform-geometry-workflows",
+  "evals": [
+    {
+      "id": 1,
+      "name": "slug-to-export-workflow",
+      "prompt": "I have a ShapeDiver model slug and Platform API access keys. I want to compute an export from that model in a backend script.",
+      "expected_output": "A response that identifies this as a PB+GB workflow, resolves the need for PB model lookup plus token/ticket issuance first, builds a normalized PB -> GB handoff, and then routes into the Geometry-side runtime flow with the correct ticket/modelViewUrl/JWT guidance.",
+      "assertions": [
+        "Identifies the task as combined Platform Backend plus Geometry Backend work.",
+        "States that PB is used first to resolve the model and mint the runtime credentials.",
+        "Chooses backend ticket rather than embedding ticket for server-side work.",
+        "Mentions the need for modelViewUrl plus the correct JWT scopes before GB runtime work.",
+        "Distinguishes PB model id from GB guid.",
+        "Builds or describes one normalized handoff object containing access_token, model_view_url, the selected ticket, guid or guids, and scopes.",
+        "Routes to the Geometry specialist references for the actual runtime code."
+      ]
+    },
+    {
+      "id": 2,
+      "name": "upload-and-publish",
+      "prompt": "Programmatically upload a Grasshopper file to ShapeDiver, wait for the Geometry Backend check, and publish the model once confirmed.",
+      "expected_output": "A response that identifies the create/upload/check/publish lifecycle as PB+GB, with PB create and publish steps around GB model-management token resolution, session initialization, upload-target retrieval, GB polling, and publish gating.",
+      "assertions": [
+        "Does not classify the workflow as PB-only.",
+        "Explains that PB creates the model and later patches/publishes it.",
+        "Explains that GB handles the upload and model-status polling/check.",
+        "Mentions GroupOwner plus GroupView token scope requirements for the upload side.",
+        "Uses model-management token data plus model_view_url and guid for the upload/check path rather than treating it as a normal ticket/session compute flow.",
+        "Mentions that GB ModelApi.getModel(...) provides the model upload target and that polling waits for confirmed, denied, or pending.",
+        "Keeps the PB and GB responsibilities distinct."
+      ]
+    },
+    {
+      "id": 3,
+      "name": "gb-only-credentials-already-known",
+      "prompt": "I already have modelViewUrl, backend ticket, and the parameter IDs. I just need Node.js code to compute outputs.",
+      "expected_output": "A response that says this is GB-only and routes to shapediver-geometry-backend instead of keeping the workflow in the PB+GB skill.",
+      "assertions": [
+        "Identifies that PB resolution is no longer needed.",
+        "Routes to shapediver-geometry-backend.",
+        "Does not insist on extra PB token retrieval when the task is already GB-only."
+      ]
+    },
+    {
+      "id": 4,
+      "name": "browser-embedding-handoff",
+      "prompt": "I have a ShapeDiver model slug and need to embed it in the browser with strong authorization enabled.",
+      "expected_output": "A response that treats this as a combined PB+GB credential-resolution workflow, chooses an embedding ticket rather than a backend ticket, requests a JWT if strong authorization is enabled, captures modelViewUrl, and routes onward to the Viewer or App Builder implementation skill.",
+      "assertions": [
+        "Identifies that PB is used first to resolve credentials and the real modelViewUrl.",
+        "Chooses an embedding ticket for the browser flow rather than a backend ticket.",
+        "Mentions a JWT/model token when strong authorization is enabled.",
+        "Routes the actual browser implementation to shapediver-viewer or the relevant shapediver-appbuilder skill.",
+        "Does not generate backend-only GB session code as the final implementation path."
+      ]
+    }
+  ]
+}
