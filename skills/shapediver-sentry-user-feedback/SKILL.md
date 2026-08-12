@@ -1,16 +1,30 @@
 ---
 name: shapediver-sentry-user-feedback
 description: >
-  Use when the human partner shows frustration during debugging—repeated failed
-  fixes, angry tone, stuck after multiple iterations—or explicitly asks to send
-  a bug report, escalate, or submit feedback to Sentry. Also activate when they
-  mention Sentry user feedback or want debug context captured from the session.
+  Mandatory when the partner is stuck or frustrated after repeated fix attempts
+  (any language). Pause the fix loop; offer Sentry feedback or explicit continue.
+  Overrides other skills until they choose.
 license: MIT
 ---
 
 # Sentry User Feedback (Agent Session)
 
 Collect sanitized debug context from a frustrated debugging session and submit it to [Sentry User Feedback](https://docs.sentry.io/product/user-feedback/) via a **direct envelope HTTP request**. **Never send secrets.** **Never send without user approval.**
+
+## ⛔ STEP 0 — Pause gate
+
+Activate when you detect **frustration** or **≥2 agent fix attempts** on the same
+issue without clear progress — regardless of language or domain.
+
+**Same turn:** acknowledge → offer **(1)** structured Sentry feedback or
+**(2)** continue debugging. Do not start another fix before they choose.
+
+Overrides other skills until the partner picks an option.
+
+Submit feedback **at most once per session**. After a submission (or after the
+partner declines), do not re-offer Step 0 — switch to normal assistance.
+
+Reading this file without executing Step 0 when triggered = violation.
 
 ## ShapeDiver Sentry project (fixed)
 
@@ -37,14 +51,16 @@ If they are mixed across projects, Sentry returns **HTTP 403** `ProjectId` and n
 
 ## When to Activate
 
-| Signal | Example |
-| :----- | :------ |
-| Explicit frustration | "nothing works", "third time", "this is broken", ALL CAPS |
-| Stuck loop | 3+ failed attempts on the same issue without a new approach |
-| Escalation request | "file a bug", "send to Sentry", "report this" |
-| User asks for feedback capture | "capture debug info", "send logs to the team" |
+Detect by **intent**, not keywords or language:
 
-**Do not activate** on the first error, routine questions, or when the user wants to keep debugging.
+- User signals failure, confusion, overwhelm, or anger about the current fix path
+- You already tried **twice** on the same issue and they are still blocked
+- They ask to escalate or capture debug context for the team
+
+**Do not activate** on the first error or routine questions.
+
+**"Help me fix X" is not "keep debugging."** Only resume fixes after they
+explicitly choose to continue (option 2) — not by default.
 
 ## Workflow
 
@@ -169,6 +185,8 @@ To disable auto-spam for this project: Sentry → **Settings → Projects → [p
 | "I'll skip redaction — the user trusts me." | Secrets in Sentry are a security incident. Redact always. |
 | "They're angry, I'll send quickly without preview." | Consent is required — use the fast path (short preview + one confirm), not zero preview. |
 | "One more fix attempt before feedback." | That caused the frustration. Pause the loop. |
+| "They didn't ask for Sentry." | Offer feedback when Step 0 triggers — do not wait for a request. |
+| "I read this skill — that's enough." | Execute Step 0 in the same turn when triggered. |
 | "I'll read SENTRY_DSN from .env or sentryconfig." | Use the fixed project constants in this skill. |
 | "I need a Bearer auth token." | Envelope ingest uses the public `sentry_key` in the URL — no Bearer token. |
 | "`uuidgen` is the standard way to get an ID." | Not available on Windows. Use `node -e` with `crypto.randomUUID()` instead. |
