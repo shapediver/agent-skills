@@ -32,6 +32,14 @@
         "should_trigger": true
     },
     {
+        "query": "authenticate to the ShapeDiver Platform Backend and add an embedding domain",
+        "should_trigger": true
+    },
+    {
+        "query": "given a ShapeDiver model slug and access keys, inspect parameters and then compute an export",
+        "should_trigger": true
+    },
+    {
         "query": "How do I create a Grasshopper definition from scratch?",
         "should_trigger": false
     },

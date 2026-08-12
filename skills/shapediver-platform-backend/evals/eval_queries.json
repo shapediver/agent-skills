@@ -1,0 +1,70 @@
+[
+  {
+    "query": "authenticate to the ShapeDiver Platform Backend with an API access key",
+    "should_trigger": true
+  },
+  {
+    "query": "query my ShapeDiver models using the Platform SDK",
+    "should_trigger": true
+  },
+  {
+    "query": "add an embedding domain with the ShapeDiver Platform API",
+    "should_trigger": true
+  },
+  {
+    "query": "request a Geometry Backend JWT from the Platform Backend",
+    "should_trigger": true
+  },
+  {
+    "query": "create a Platform API token for a CI integration",
+    "should_trigger": true
+  },
+  {
+    "query": "get a ShapeDiver model by slug and include backend_system and backend_ticket",
+    "should_trigger": true
+  },
+  {
+    "query": "create or query ShapeDiver saved states through the Platform API",
+    "should_trigger": true
+  },
+  {
+    "query": "list organization users with @shapediver/sdk.platform-api-sdk-v1",
+    "should_trigger": true
+  },
+  {
+    "query": "given a ShapeDiver model slug and access keys, get a backend ticket and then compute an export",
+    "should_trigger": false
+  },
+  {
+    "query": "compute ShapeDiver outputs with @shapediver/sdk.geometry-api-sdk-v2",
+    "should_trigger": false
+  },
+  {
+    "query": "create a ShapeDiver backend session and export STL files",
+    "should_trigger": false
+  },
+  {
+    "query": "build a browser canvas configurator with the ShapeDiver Viewer API",
+    "should_trigger": false
+  },
+  {
+    "query": "embed ShapeDiver with an App Builder iframe",
+    "should_trigger": false
+  },
+  {
+    "query": "customize my ShapeDiver App Builder theme",
+    "should_trigger": false
+  },
+  {
+    "query": "help me design a Grasshopper definition",
+    "should_trigger": false
+  },
+  {
+    "query": "write a generic OAuth client with no ShapeDiver context",
+    "should_trigger": false
+  },
+  {
+    "query": "show Three.js code for a 3D viewer",
+    "should_trigger": false
+  }
+]

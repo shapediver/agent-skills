@@ -1,0 +1,88 @@
+{
+  "skill_name": "shapediver-platform-backend",
+  "evals": [
+    {
+      "id": 1,
+      "name": "sdk-auth-query-models",
+      "prompt": "Write Node.js TypeScript code using @shapediver/sdk.platform-api-sdk-v1 to authenticate with a ShapeDiver access key ID and secret, then list my 10 most recent models.",
+      "expected_output": "A Platform SDK example that creates the client with create({ ... }) and a Platform-root baseUrl, authenticates with passwordGrant using the access key pair, queries client.models.query(...), reads response.data.result, and handles pagination defensively without switching to Geometry Backend code.",
+      "assertions": [
+        "Imports create from @shapediver/sdk.platform-api-sdk-v1.",
+        "Uses create({ ... }) rather than inventing a manual SDK wrapper.",
+        "Passes the Platform root URL as baseUrl rather than /api/v1.",
+        "Calls authorization.passwordGrant(accessKeyId, accessKeySecret).",
+        "Uses client.models.query(...) for the list request.",
+        "Reads models from response.data.result.",
+        "Treats pagination.next_offset as the continuation cursor when pagination is mentioned.",
+        "Does not use @shapediver/sdk.geometry-api-sdk-v2 or create a Geometry Backend session."
+      ]
+    },
+    {
+      "id": 2,
+      "name": "rest-oauth-model-get",
+      "prompt": "Give me cURL commands to authenticate against the ShapeDiver Platform Backend and fetch a model by slug with backend_system, ticket, and backend_ticket embeds.",
+      "expected_output": "A REST-first answer with an OAuth password-grant request and a protected model GET using the correct Platform endpoints, X-ShapeDiver-Client, and embed parameters, while clearly distinguishing the returned tickets from the Platform bearer token.",
+      "assertions": [
+        "Uses POST {platformRoot}/oauth/token.",
+        "Uses the access key ID as username and access key secret as password.",
+        "Includes X-ShapeDiver-Client on the protected model request.",
+        "Calls GET {platformRoot}/api/v1/models/{slug} or equivalent slug-based model path.",
+        "Requests backend_system, ticket, and backend_ticket embeds.",
+        "Distinguishes Platform bearer tokens from Geometry Backend tickets."
+      ]
+    },
+    {
+      "id": 3,
+      "name": "domain-management",
+      "prompt": "How do I add localhost:3000 and example.com as ShapeDiver embedding domains through the Platform API?",
+      "expected_output": "A Platform-domain workflow using SDK or REST patterns, exact hostname rules, non-standard port handling, and placeholders for credentials or IDs, without drifting into Viewer or iframe code.",
+      "assertions": [
+        "Uses Platform domain APIs or clearly explains the domain resource workflow.",
+        "Mentions exact hostname matching and non-standard port rules.",
+        "Warns that subdomains are not implied.",
+        "Uses placeholders for credentials and domain values when concrete values are missing.",
+        "Does not generate Viewer, App Builder, or Geometry Backend session code."
+      ]
+    },
+    {
+      "id": 4,
+      "name": "geometry-token-request",
+      "prompt": "Show TypeScript code to request a Geometry Backend JWT for a ShapeDiver model through the Platform Backend.",
+      "expected_output": "A Platform SDK example that requests a model token/JWT via modelTokens.create with model ID, scope, and optional lifetime, then explains that the result is for Geometry Backend or Viewer authorization rather than Platform API calls.",
+      "assertions": [
+        "Uses client.modelTokens.create(...) or an explicit Platform token endpoint.",
+        "Includes a Platform model identifier plus scope and optional lifetime.",
+        "Uses a model-token scope enum or an explicit valid Group* scope.",
+        "Mentions the returned model_view_url when the token response is discussed.",
+        "Explains that the returned token is used with the Geometry Backend or Viewer authorization flow.",
+        "Does not create a Geometry Backend session or compute outputs.",
+        "Distinguishes the JWT from ticket-based access."
+      ]
+    },
+    {
+      "id": 5,
+      "name": "api-token-create-warning",
+      "prompt": "I need a ShapeDiver Platform API token for automation. Generate the code and tell me what to watch out for.",
+      "expected_output": "A Platform SDK or REST example that creates an API token with scope and optional validity metadata, warns that key_secret is only returned once, and treats the resulting secret as sensitive.",
+      "assertions": [
+        "Uses client.apiTokens.create(...) or the REST apitokens endpoint.",
+        "Includes scope, description, or validity fields when shown.",
+        "Warns that key_secret is returned only once.",
+        "Treats the secret as sensitive and does not invent a fake token value.",
+        "Stays on the Platform Backend instead of generating Geometry Backend computation code."
+      ]
+    },
+    {
+      "id": 6,
+      "name": "boundary-run-model",
+      "prompt": "Use the ShapeDiver Platform Backend to compute outputs and generate an STL export for my model.",
+      "expected_output": "A boundary-aware answer that explains the Platform Backend can obtain tickets or JWTs but does not run computations, and routes the request to shapediver-platform-geometry-workflows unless explicit GB runtime prerequisites are already known.",
+      "assertions": [
+        "Explains that Platform Backend is for management and authorization, not computation.",
+        "Routes cross-system output/export execution to shapediver-platform-geometry-workflows.",
+        "Mentions Platform-issued tickets or JWTs plus modelViewUrl as prerequisites when relevant.",
+        "Does not invent Platform-only computation endpoints or SDK methods."
+      ]
+    }
+  ]
+}
