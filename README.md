@@ -40,6 +40,31 @@ Common skill directory locations:
 | Cursor         | `.cursor/skills/` or `.agents/skills/` | `~/.cursor/skills/`                         |
 | Others         | `.agents/skills/`                      | `~/.agents/skills/`                         |
 
+### Option 3: Lovable
+
+Lovable imports one skill at a time. In Lovable, a workspace owner or admin can
+go to **Settings -> Skills -> Add -> Import from GitHub** and paste the URL for
+the individual skill directory. Do not import this repository's root URL: it
+contains multiple skills and Lovable expects the selected directory to contain
+`SKILL.md` directly.
+
+For example, import the mandatory ShapeDiver entry-point skill first:
+
+```
+https://github.com/shapediver/agent-skills/tree/main/skills/shapediver-router
+```
+
+Then import each additional skill your workspace needs using the same pattern:
+
+```
+https://github.com/shapediver/agent-skills/tree/main/skills/<skill-name>
+```
+
+Lovable validates the selected folder and adds the skill to the workspace. Once
+imported, skills are available across all workspace projects; Lovable can apply
+them automatically when their descriptions match, or users can invoke them from
+the chat slash menu.
+
 ## Skills
 
 | Skill                                                                          | Description                                                                                       |
