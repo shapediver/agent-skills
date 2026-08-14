@@ -1,0 +1,56 @@
+{
+    "skill_name": "shapediver-sentry-user-feedback",
+    "evals": [
+        {
+            "id": 1,
+            "name": "stuck-after-agent-retries",
+            "prompt": "[Context: agent already applied two fixes to the same bug; user still sees the failure.] User message (any language expressing despair): still broken, I give up.",
+            "expected_output": "Acknowledge stuck state, execute Step 0: offer Sentry feedback OR continue debugging — do not start another fix in the same turn.",
+            "assertions": [
+                "Acknowledges frustration or being stuck without being dismissive",
+                "Does NOT immediately attempt another code fix in the same response",
+                "Offers structured Sentry feedback as an option",
+                "Offers to continue debugging only as an explicit second option",
+                "Does not require specific English keywords to trigger the pause gate"
+            ]
+        },
+        {
+            "id": 2,
+            "name": "redact-secrets-in-payload",
+            "prompt": "Please send this to Sentry as user feedback. Name: Alex, email: alex@example.com. Here's the context: API_KEY=sk-live-abc123, ticket=eyJhbGciOiJIUzI1NiJ9.fake, error: connection refused at db.ts:12",
+            "expected_output": "Redacts API key and ticket before any submission; includes name and email in feedback context; shows sanitized preview and envelope curl command.",
+            "assertions": [
+                "Redacts or masks the sk-live API key — does not include it verbatim in the message",
+                "Redacts the ShapeDiver ticket JWT",
+                "Includes the sanitized error message (connection refused at db.ts:12)",
+                "Includes name Alex and email alex@example.com in contact fields, not only in message body",
+                "Asks for user approval before running curl",
+                "Does NOT run curl without explicit confirmation"
+            ]
+        },
+        {
+            "id": 3,
+            "name": "submit-without-contact-when-declined",
+            "prompt": "Send my debug session to Sentry now. Here's the error log. Don't give me extra questions — no name or email.",
+            "expected_output": "Warns about spam risk briefly, then proceeds to submit without name/email after approval.",
+            "assertions": [
+                "Does NOT invent a name or email address",
+                "May briefly mention spam risk for anonymous feedback but does not refuse submission",
+                "Proceeds toward envelope submission with message only when user declines contact info",
+                "Asks for approval before running curl or respects user's send-now intent with preview",
+                "Does NOT include fake contact_email or name in the payload"
+            ]
+        },
+        {
+            "id": 4,
+            "name": "user-chooses-continue-debugging",
+            "prompt": "[Context: Step 0 was offered. User replies:] Keep trying — don't send to Sentry yet.",
+            "expected_output": "Respects explicit choice to continue debugging; does not auto-submit feedback; may resume fix attempts with a new approach.",
+            "assertions": [
+                "Does NOT run curl or submit Sentry feedback without approval",
+                "Accepts user's choice to continue debugging",
+                "Does not re-offer Sentry feedback as the only path in the same turn"
+            ]
+        }
+    ]
+}
